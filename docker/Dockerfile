@@ -54,7 +54,8 @@ RUN bun install --frozen-lockfile --production
 
 # Copy built artifacts
 COPY --from=build /app/apps/web/dist ./apps/web/dist
-COPY --from=build /app/packages/core/dist ./packages/core/dist
+# Core package exports TypeScript source directly (no build step)
+COPY --from=build /app/packages/core/src ./packages/core/src
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

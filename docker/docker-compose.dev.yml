@@ -25,6 +25,13 @@ services:
       - /app/node_modules
       - /app/apps/web/node_modules
       - /app/packages/core/node_modules
+    networks:
+      - rental-studio-network
     # Disable healthcheck for faster dev startup
     healthcheck:
       disable: true
+
+  # Override postgres to expose port for local development
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
