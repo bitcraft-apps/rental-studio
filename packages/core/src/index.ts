@@ -3,9 +3,11 @@
  * Shared types, constants, and utilities for Rental Studio
  */
 
+import packageJson from "../package.json";
+
 // Constants
 export const APP_NAME = "Rental Studio";
-export const APP_VERSION = "0.0.1";
+export const APP_VERSION = packageJson.version;
 
 // Types (to be expanded)
 export interface User {
