@@ -14,8 +14,12 @@ runs:
   steps:
     - name: Setup SSH
       shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh_key }}
+        KNOWN_HOSTS: ${{ inputs.known_hosts }}
       run: |
         mkdir -p ~/.ssh
-        (umask 077 && echo "${{ inputs.ssh_key }}" > ~/.ssh/dokku_deploy)
+        # Use env vars instead of direct interpolation to prevent injection attacks
+        (umask 077 && echo "$SSH_KEY" > ~/.ssh/dokku_deploy)
         # Use pre-verified host key instead of ssh-keyscan to prevent MITM attacks
-        echo "${{ inputs.known_hosts }}" >> ~/.ssh/known_hosts
+        echo "$KNOWN_HOSTS" >> ~/.ssh/known_hosts

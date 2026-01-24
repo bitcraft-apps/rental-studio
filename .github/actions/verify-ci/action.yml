@@ -5,6 +5,10 @@ inputs:
   ref:
     description: 'Git ref to verify CI against (commit SHA, branch, or tag)'
     required: true
+  workflow_name:
+    description: 'Name of the CI workflow to verify'
+    required: false
+    default: 'CI'
   poll_interval:
     description: 'Seconds between CI status checks'
     required: false
@@ -36,6 +40,7 @@ runs:
         POLL_MAX_NOT_FOUND: ${{ inputs.max_not_found }}
         REF: ${{ inputs.ref }}
         REPO: ${{ github.repository }}
+        WORKFLOW_NAME: ${{ inputs.workflow_name }}
       run: |
         # Resolve the ref to a commit SHA
         if ! TARGET_SHA=$(gh api "repos/${REPO}/commits/${REF}" --jq '.sha'); then
@@ -61,7 +66,7 @@ runs:
         BACKOFF=$POLL_INTERVAL
 
         for i in $(seq 1 "$POLL_MAX_ATTEMPTS"); do
-          RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
+          RESULT=$(gh run list --workflow="$WORKFLOW_NAME" --commit="${TARGET_SHA}" --limit=1 --json conclusion \
             | jq -r '.[0].conclusion // empty')
 
           if [ -z "$RESULT" ]; then
@@ -72,8 +77,8 @@ runs:
               exit 1
             fi
             echo "CI run not found yet, waiting ${BACKOFF}s... (attempt $i/$POLL_MAX_ATTEMPTS, consecutive not-found: $NOT_FOUND_COUNT/$POLL_MAX_NOT_FOUND)"
-            # Add jitter (0-50% of backoff) to prevent API rate limiting when multiple deploys run concurrently
-            JITTER=$((RANDOM % (BACKOFF / 2 + 1)))
+            # Add jitter (1-5s) to prevent API rate limiting when multiple deploys run concurrently
+            JITTER=$((RANDOM % 5 + 1))
             sleep "$((BACKOFF + JITTER))"
             # Exponential backoff with 60s cap
             BACKOFF=$((BACKOFF * 3 / 2 < 60 ? BACKOFF * 3 / 2 : 60))
@@ -96,8 +101,8 @@ runs:
           fi
 
           echo "CI still running (status: $RESULT), waiting ${BACKOFF}s... (attempt $i/$POLL_MAX_ATTEMPTS)"
-          # Add jitter to in-progress polling as well
-          JITTER=$((RANDOM % (BACKOFF / 2 + 1)))
+          # Add jitter (1-5s) to prevent API rate limiting
+          JITTER=$((RANDOM % 5 + 1))
           sleep "$((BACKOFF + JITTER))"
           # Exponential backoff with 60s cap
           BACKOFF=$((BACKOFF * 3 / 2 < 60 ? BACKOFF * 3 / 2 : 60))
