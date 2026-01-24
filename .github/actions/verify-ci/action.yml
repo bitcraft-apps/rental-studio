@@ -31,9 +31,9 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-        CI_POLL_INTERVAL: ${{ inputs.poll_interval }}
-        CI_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
-        CI_MAX_NOT_FOUND: ${{ inputs.max_not_found }}
+        POLL_INTERVAL: ${{ inputs.poll_interval }}
+        POLL_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+        POLL_MAX_NOT_FOUND: ${{ inputs.max_not_found }}
         REF: ${{ inputs.ref }}
         REPO: ${{ github.repository }}
       run: |
@@ -58,22 +58,25 @@ runs:
 
         NOT_FOUND_COUNT=0
         TOTAL_NOT_FOUND=0
+        BACKOFF=$POLL_INTERVAL
 
-        for i in $(seq 1 "$CI_MAX_ATTEMPTS"); do
+        for i in $(seq 1 "$POLL_MAX_ATTEMPTS"); do
           RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
             | jq -r '.[0].conclusion // empty')
 
           if [ -z "$RESULT" ]; then
             NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
             TOTAL_NOT_FOUND=$((TOTAL_NOT_FOUND + 1))
-            if [ "$NOT_FOUND_COUNT" -ge "$CI_MAX_NOT_FOUND" ]; then
-              echo "::error::No CI run found for commit ${TARGET_SHA} after ${CI_MAX_NOT_FOUND} consecutive attempts (total not-found: ${TOTAL_NOT_FOUND}). This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
+            if [ "$NOT_FOUND_COUNT" -ge "$POLL_MAX_NOT_FOUND" ]; then
+              echo "::error::No CI run found for commit ${TARGET_SHA} after ${POLL_MAX_NOT_FOUND} consecutive attempts (total not-found: ${TOTAL_NOT_FOUND}). This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
               exit 1
             fi
-            echo "CI run not found yet, waiting... (attempt $i/$CI_MAX_ATTEMPTS, consecutive not-found: $NOT_FOUND_COUNT/$CI_MAX_NOT_FOUND)"
-            # Add jitter (0-5 seconds) to prevent API rate limiting when multiple deploys run concurrently
-            JITTER=$((RANDOM % 6))
-            sleep "$((CI_POLL_INTERVAL + JITTER))"
+            echo "CI run not found yet, waiting ${BACKOFF}s... (attempt $i/$POLL_MAX_ATTEMPTS, consecutive not-found: $NOT_FOUND_COUNT/$POLL_MAX_NOT_FOUND)"
+            # Add jitter (0-50% of backoff) to prevent API rate limiting when multiple deploys run concurrently
+            JITTER=$((RANDOM % (BACKOFF / 2 + 1)))
+            sleep "$((BACKOFF + JITTER))"
+            # Exponential backoff with 60s cap
+            BACKOFF=$((BACKOFF * 3 / 2 < 60 ? BACKOFF * 3 / 2 : 60))
             continue
           fi
 
@@ -92,10 +95,12 @@ runs:
             exit 1
           fi
 
-          echo "CI still running (status: $RESULT), waiting... (attempt $i/$CI_MAX_ATTEMPTS)"
+          echo "CI still running (status: $RESULT), waiting ${BACKOFF}s... (attempt $i/$POLL_MAX_ATTEMPTS)"
           # Add jitter to in-progress polling as well
-          JITTER=$((RANDOM % 6))
-          sleep "$((CI_POLL_INTERVAL + JITTER))"
+          JITTER=$((RANDOM % (BACKOFF / 2 + 1)))
+          sleep "$((BACKOFF + JITTER))"
+          # Exponential backoff with 60s cap
+          BACKOFF=$((BACKOFF * 3 / 2 < 60 ? BACKOFF * 3 / 2 : 60))
         done
         echo "::error::Timeout waiting for CI to complete (total not-found responses: ${TOTAL_NOT_FOUND})"
         exit 1

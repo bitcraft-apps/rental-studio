@@ -35,6 +35,10 @@ permissions:
 concurrency:
   # Staging: cancel-in-progress to always deploy latest (avoids out-of-order deploys from workflow_run race)
   # Production: serialize deploys (cancel-in-progress: false) for safety
+  #
+  # NOTE: workflow_run can still have race conditions if deploys complete out-of-order after
+  # passing concurrency control. This is an inherent limitation - for critical deployments,
+  # use workflow_dispatch with explicit commit SHA.
   group: >-
     deploy-${{
       github.event_name == 'workflow_run' && 'staging'
@@ -84,6 +88,8 @@ jobs:
         if: github.event_name == 'workflow_run'
         run: echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
 
+      # Sparse checkout to minimize checkout time - only need .github/actions for verify-ci.
+      # If the action requires additional files, expand sparse-checkout patterns accordingly.
       - name: Checkout (for verify-ci action)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_verification != 'true'
         uses: actions/checkout@v4
@@ -161,15 +167,12 @@ jobs:
         uses: ./.github/actions/setup-dokku-ssh
         with:
           ssh_key: ${{ secrets.DOKKU_SSH_KEY }}
-          host: ${{ secrets.HETZNER_HOST }}
+          known_hosts: ${{ secrets.DOKKU_KNOWN_HOSTS }}
 
       - name: Deploy to Dokku (Staging)
         run: |
           git remote add dokku dokku@${{ secrets.HETZNER_HOST }}:rental-studio-staging
-          if ! GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force 2>&1; then
-            echo "::error::Deployment to staging failed"
-            exit 1
-          fi
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force
           echo "::notice::Deployment to staging completed successfully"
 
   deploy-production:
@@ -185,6 +188,8 @@ jobs:
       url: https://rental-studio.bitcraftapps.dev
 
     steps:
+      # Sparse checkout to minimize checkout time - only need .github/actions for verify-ci.
+      # If the action requires additional files, expand sparse-checkout patterns accordingly.
       - name: Checkout (for verify-ci action)
         uses: actions/checkout@v4
         with:
@@ -243,13 +248,10 @@ jobs:
         uses: ./.github/actions/setup-dokku-ssh
         with:
           ssh_key: ${{ secrets.DOKKU_SSH_KEY }}
-          host: ${{ secrets.HETZNER_HOST }}
+          known_hosts: ${{ secrets.DOKKU_KNOWN_HOSTS }}
 
       - name: Deploy to Dokku (Production)
         run: |
           git remote add dokku dokku@${{ secrets.HETZNER_HOST }}:rental-studio
-          if ! GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force 2>&1; then
-            echo "::error::Deployment to production failed"
-            exit 1
-          fi
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force
           echo "::notice::Deployment to production completed successfully"

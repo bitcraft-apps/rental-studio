@@ -5,8 +5,8 @@ inputs:
   ssh_key:
     description: 'SSH private key for Dokku authentication'
     required: true
-  host:
-    description: 'Dokku host to connect to'
+  known_hosts:
+    description: 'Pre-verified known_hosts entry for the Dokku host (avoids MITM vulnerability of ssh-keyscan)'
     required: true
 
 runs:
@@ -17,4 +17,5 @@ runs:
       run: |
         mkdir -p ~/.ssh
         (umask 077 && echo "${{ inputs.ssh_key }}" > ~/.ssh/dokku_deploy)
-        ssh-keyscan -H "${{ inputs.host }}" >> ~/.ssh/known_hosts
+        # Use pre-verified host key instead of ssh-keyscan to prevent MITM attacks
+        echo "${{ inputs.known_hosts }}" >> ~/.ssh/known_hosts
