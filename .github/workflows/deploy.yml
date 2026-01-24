@@ -40,6 +40,9 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
+    # workflow_run: automatic deploy after CI succeeds
+    # workflow_dispatch: manual escape hatch - bypasses CI verification intentionally
+    #   Use for emergencies when you need to deploy without waiting for CI
     if: |
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
@@ -48,6 +51,12 @@ jobs:
       url: https://rental-studio-staging.bitcraftapps.dev
 
     steps:
+      - name: Log deployment info
+        run: |
+          echo "Deploying to: staging"
+          echo "Commit: ${{ github.event.workflow_run.head_sha || github.sha }}"
+          echo "Triggered by: ${{ github.event_name }}"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -78,20 +87,28 @@ jobs:
       url: https://rental-studio.bitcraftapps.dev
 
     steps:
+      - name: Log deployment info
+        run: |
+          echo "Deploying to: production"
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Release tag: ${{ github.event.release.tag_name || 'N/A' }}"
+
       - name: Verify CI passed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # For releases, use the tag's target commit; otherwise use current SHA
+          # For releases, resolve the tag to its actual commit SHA via GitHub API
+          # (target_commitish is often the branch name, not the SHA)
           if [ "${{ github.event_name }}" = "release" ]; then
-            TARGET_SHA=${{ github.event.release.target_commitish }}
+            TARGET_SHA=$(gh api repos/${{ github.repository }}/git/ref/tags/${{ github.event.release.tag_name }} --jq '.object.sha')
+            echo "Resolved tag ${{ github.event.release.tag_name }} to commit ${TARGET_SHA}"
           else
             TARGET_SHA=${{ github.sha }}
           fi
           echo "Verifying CI has passed for commit ${TARGET_SHA}..."
           # Wait up to 5 minutes for CI to complete if still running
           for i in {1..30}; do
-            RESULT=$(gh run list --workflow=CI --commit=${TARGET_SHA} --limit=1 --json conclusion \
+            RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
               | jq -r '.[0].conclusion // empty')
             if [ "$RESULT" = "success" ]; then
               echo "CI passed for this commit"
