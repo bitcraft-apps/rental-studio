@@ -10,7 +10,6 @@ interface HealthResponse {
 interface ErrorResponse {
   error: string;
   path?: string;
-  status?: number;
 }
 
 interface VersionResponse {
@@ -55,8 +54,8 @@ describe('Web App', () => {
       expect(await res.text()).toContain('Login');
     });
 
-    it('GET /auth/logout should return logout', async () => {
-      const res = await app.request('/auth/logout');
+    it('POST /auth/logout should return logout', async () => {
+      const res = await app.request('/auth/logout', { method: 'POST' });
 
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('Logout');
@@ -81,13 +80,21 @@ describe('Web App', () => {
       expect(body.version).toBeDefined();
     });
 
-    it('should include CORS headers', async () => {
+    it('should include CORS headers on preflight', async () => {
       const res = await app.request('/api/version', {
         method: 'OPTIONS',
         headers: {
           Origin: 'http://example.com',
           'Access-Control-Request-Method': 'GET',
         },
+      });
+
+      expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    });
+
+    it('should include CORS headers on actual requests', async () => {
+      const res = await app.request('/api/version', {
+        headers: { Origin: 'http://example.com' },
       });
 
       expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');

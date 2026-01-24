@@ -14,6 +14,7 @@ const app = new Hono();
 
 // Middleware
 app.use(logger());
+// TODO: Configure allowed origins before adding authentication (currently allows all origins)
 app.use('/api/*', cors());
 app.use('/static/*', serveStatic({ root: './public' }));
 

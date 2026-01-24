@@ -18,10 +18,14 @@ export function setupErrorHandling(app: Hono) {
     // In production, don't leak error details
     const message = process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
 
-    return c.json({ error: message, status }, status);
+    return c.json({ error: message }, status);
   });
 
   app.notFound((c) => {
-    return c.json({ error: 'Not Found', path: c.req.path }, 404);
+    const response: { error: string; path?: string } = { error: 'Not Found' };
+    if (process.env.NODE_ENV !== 'production') {
+      response.path = c.req.path;
+    }
+    return c.json(response, 404);
   });
 }
