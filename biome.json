@@ -31,7 +31,7 @@
       },
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsole": "warn"
+        "noConsole": "off"
       },
       "performance": {
         "recommended": true
@@ -52,6 +52,18 @@
     }
   },
   "files": {
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json", "**/*.css", "**/*.md"]
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.cjs",
+      "**/*.mjs",
+      "**/*.json",
+      "**/*.css",
+      "**/*.md",
+      "**/*.yaml",
+      "**/*.yml"
+    ]
   }
 }
