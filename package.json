@@ -1,11 +1,22 @@
 {
   "name": "rental-studio",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run --filter @rental-studio/web dev",
     "build": "bun run --filter '*' build",
-    "lint": "bun run --filter '*' lint",
-    "format": "bun run --filter '*' format"
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "bun run --filter '*' typecheck",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.12",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
   }
 }
