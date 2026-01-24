@@ -37,6 +37,9 @@ COPY . .
 # Build all packages
 RUN bun run build
 
+# Verify build artifacts exist (fail fast if build silently failed)
+RUN test -f ./apps/web/dist/index.js || (echo "Build failed: dist/index.js not found" && exit 1)
+
 # =============================================================================
 # Stage 4: Production image (minimal)
 # =============================================================================
