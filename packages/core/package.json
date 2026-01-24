@@ -13,9 +13,7 @@
   },
   "scripts": {
     "build": "echo 'No build step - TypeScript source consumed directly by Bun'",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome check .",
-    "format": "biome format --write ."
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.7.0"
