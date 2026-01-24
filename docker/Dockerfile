@@ -6,7 +6,7 @@
 # =============================================================================
 # Stage 1: Base image with Bun runtime
 # =============================================================================
-FROM oven/bun:1.1-alpine AS base
+FROM oven/bun:1.3-alpine AS base
 
 WORKDIR /app
 

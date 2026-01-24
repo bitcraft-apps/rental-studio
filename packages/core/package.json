@@ -13,9 +13,11 @@
   },
   "scripts": {
     "build": "echo 'No build step - TypeScript source consumed directly by Bun'",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5.7.0"
   }
 }
