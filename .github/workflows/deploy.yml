@@ -10,15 +10,15 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Environment to deploy to"
+        description: 'Environment to deploy to'
         required: true
-        default: "staging"
+        default: 'staging'
         type: choice
         options:
           - staging
           - production
       ref:
-        description: "Git ref to deploy (commit SHA, branch, or tag). Defaults to HEAD of main."
+        description: 'Git ref to deploy (commit SHA, branch, or tag). Defaults to HEAD of main.'
         required: false
         type: string
 
@@ -103,27 +103,33 @@ jobs:
           echo "Target ref: ${{ github.event.release.tag_name || inputs.ref || 'default (github.sha)' }}"
 
           # Resolve the commit SHA to verify CI against
+          # Uses commits endpoint - works for tags, branches, and SHAs
           if [ "${{ github.event_name }}" = "release" ]; then
-            # Use commits endpoint - works for both lightweight and annotated tags
-            TARGET_SHA=$(gh api repos/${{ github.repository }}/commits/${{ github.event.release.tag_name }} --jq '.sha') || {
-              echo "::error::Failed to resolve tag to commit SHA"
-              exit 1
-            }
-            if [ -z "$TARGET_SHA" ]; then
-              echo "::error::Resolved SHA is empty"
-              exit 1
-            fi
-            echo "Resolved tag ${{ github.event.release.tag_name }} to commit ${TARGET_SHA}"
+            REF="${{ github.event.release.tag_name }}"
+          elif [ -n "${{ inputs.ref }}" ]; then
+            REF="${{ inputs.ref }}"
           else
-            TARGET_SHA="${{ inputs.ref || github.sha }}"
+            REF="${{ github.sha }}"
           fi
+
+          TARGET_SHA=$(gh api repos/${{ github.repository }}/commits/${REF} --jq '.sha') || {
+            echo "::error::Failed to resolve ref '${REF}' to commit SHA"
+            exit 1
+          }
+          if [ -z "$TARGET_SHA" ]; then
+            echo "::error::Resolved SHA is empty for ref '${REF}'"
+            exit 1
+          fi
+          echo "Resolved ref '${REF}' to commit ${TARGET_SHA}"
           echo "Verifying CI has passed for commit ${TARGET_SHA}..."
 
-          # Track consecutive "not found" attempts - fail fast for old commits
+          # CI verification timeout configuration:
+          # - Poll interval: 10 seconds
+          # - Max attempts: 60 (total ~10 minutes for CI to complete)
+          # - Max "not found" attempts: 6 (~1 minute) - fails fast for commits without CI runs
           NOT_FOUND_COUNT=0
-          MAX_NOT_FOUND=6  # 1 minute of not finding = commit likely never had CI
+          MAX_NOT_FOUND=6
 
-          # Wait up to 10 minutes for CI to complete if still running
           for i in {1..60}; do
             RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
               | jq -r '.[0].conclusion // empty')
