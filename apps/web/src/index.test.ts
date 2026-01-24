@@ -3,7 +3,12 @@ import { Hono } from 'hono';
 import app from './index';
 import { setupErrorHandling } from './middleware/error-handler';
 
-/** Creates a test app that extends the main app with error-triggering routes */
+/**
+ * Creates a test app that wraps the main app with error-triggering routes.
+ * We create a wrapper Hono instance because we need error handling to cover
+ * test-only routes. The main app's error handlers are scoped to its routes,
+ * so testApp's setupErrorHandling catches errors from /test-error.
+ */
 function createTestApp() {
   const testApp = new Hono();
   testApp.route('/', app);

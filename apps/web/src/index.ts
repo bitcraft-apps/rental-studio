@@ -5,10 +5,10 @@ import { serveStatic } from 'hono/bun';
 import { logger } from 'hono/logger';
 
 import { setupErrorHandling } from './middleware/error-handler';
-import apiRoutes from './routes/api';
+import api from './routes/api';
 import appRoutes from './routes/app';
-import authRoutes from './routes/auth';
-import indexRoutes from './routes/index';
+import auth from './routes/auth';
+import index from './routes/index';
 
 const app = new Hono();
 
@@ -34,10 +34,10 @@ app.get('/health', (c) => {
 });
 
 // Routes
-app.route('/', indexRoutes);
-app.route('/auth', authRoutes);
+app.route('/', index);
+app.route('/auth', auth);
 app.route('/app', appRoutes);
-app.route('/api', apiRoutes);
+app.route('/api', api);
 
 // Error handling (must be registered after routes)
 setupErrorHandling(app);

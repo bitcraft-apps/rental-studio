@@ -11,6 +11,8 @@ export function setupErrorHandling(app: Hono) {
     // TODO: Replace with structured logger (e.g., pino) that includes request context
     console.error(`[ERROR] ${err.message}`, err.stack);
 
+    // HTTPException messages are assumed to be client-safe (e.g., "Unauthorized", "Bad Request")
+    // Do not throw HTTPException with sensitive internal details
     if (err instanceof HTTPException) {
       return c.json({ error: err.message }, err.status);
     }
