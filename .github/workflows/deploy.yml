@@ -56,69 +56,40 @@ jobs:
     environment:
       name: staging
       url: https://rental-studio-staging.bitcraftapps.dev
-    env:
-      CI_POLL_INTERVAL: 10
-      CI_MAX_ATTEMPTS: 60
-      CI_MAX_NOT_FOUND: 6
 
     steps:
-      - name: Verify CI passed
+      # For workflow_run, we already know CI passed - just need to record the SHA
+      - name: Set deploy SHA (workflow_run)
+        id: workflow-run-sha
+        if: github.event_name == 'workflow_run'
+        run: echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout (for verify-ci action)
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_verification != 'true'
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions/verify-ci
+          sparse-checkout-cone-mode: false
+
+      - name: Verify CI passed
+        id: verify-ci
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_verification != 'true'
+        uses: ./.github/actions/verify-ci
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Resolve SHA (skip verification path)
+        id: skip-verify-sha
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_verification == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Staging deploy triggered by: workflow_dispatch"
-          
-          # Resolve the commit SHA to verify CI against
-          if [ -n "${{ inputs.ref }}" ]; then
-            REF="${{ inputs.ref }}"
-          else
-            REF="${{ github.sha }}"
-          fi
-
-          TARGET_SHA=$(gh api "repos/${{ github.repository }}/commits/${REF}" --jq '.sha' 2>&1) || {
-            echo "::error::Failed to resolve ref '${REF}': ${TARGET_SHA}"
-            exit 1
-          }
-          if [ -z "$TARGET_SHA" ]; then
-            echo "::error::Resolved SHA is empty for ref '${REF}'"
+          REF="${{ inputs.ref || github.sha }}"
+          if ! SHA=$(gh api "repos/${{ github.repository }}/commits/${REF}" --jq '.sha'); then
+            echo "::error::Failed to resolve ref '${REF}'"
             exit 1
           fi
-          echo "Resolved ref '${REF}' to commit ${TARGET_SHA}"
-          echo "Verifying CI has passed for commit ${TARGET_SHA}..."
-
-          NOT_FOUND_COUNT=0
-
-          for i in $(seq 1 $CI_MAX_ATTEMPTS); do
-            RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
-              | jq -r '.[0].conclusion // empty')
-
-            if [ -z "$RESULT" ]; then
-              NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
-              if [ $NOT_FOUND_COUNT -ge $CI_MAX_NOT_FOUND ]; then
-                echo "::error::No CI run found for commit ${TARGET_SHA} after ${CI_MAX_NOT_FOUND} attempts. This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
-                exit 1
-              fi
-              echo "CI run not found yet, waiting... (attempt $i/$CI_MAX_ATTEMPTS, not found count: $NOT_FOUND_COUNT/$CI_MAX_NOT_FOUND)"
-              sleep $CI_POLL_INTERVAL
-              continue
-            fi
-
-            NOT_FOUND_COUNT=0
-
-            if [ "$RESULT" = "success" ]; then
-              echo "::notice::CI passed for this commit"
-              exit 0
-            elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
-              echo "::error::CI failed or was cancelled for this commit"
-              exit 1
-            fi
-
-            echo "CI still running (status: $RESULT), waiting... (attempt $i/$CI_MAX_ATTEMPTS)"
-            sleep $CI_POLL_INTERVAL
-          done
-          echo "::error::Timeout waiting for CI to complete"
-          exit 1
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Warn about CI bypass
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_verification == 'true'
@@ -128,8 +99,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.workflow_run.head_sha || inputs.ref || github.sha }}
+          # Use resolved SHA to prevent TOCTOU issues when ref is a branch name
+          ref: ${{ steps.workflow-run-sha.outputs.sha || steps.verify-ci.outputs.sha || steps.skip-verify-sha.outputs.sha }}
 
       - name: Log deployment info
         run: |
@@ -137,6 +108,7 @@ jobs:
           echo "Commit: $(git rev-parse HEAD)"
           echo "Commit message: $(git log -1 --format='%s')"
           echo "Triggered by: ${{ github.event_name }}"
+          echo "CI Verification: ${{ github.event.inputs.skip_ci_verification == 'true' && 'BYPASSED' || 'Passed' }}"
 
       - name: Setup SSH
         run: |
@@ -164,79 +136,25 @@ jobs:
     environment:
       name: production
       url: https://rental-studio.bitcraftapps.dev
-    env:
-      CI_POLL_INTERVAL: 10
-      CI_MAX_ATTEMPTS: 60
-      CI_MAX_NOT_FOUND: 6
 
     steps:
+      - name: Checkout (for verify-ci action)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions/verify-ci
+          sparse-checkout-cone-mode: false
+
       - name: Verify CI passed
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Production deploy triggered by: ${{ github.event_name }}"
-          echo "Target ref: ${{ github.event.release.tag_name || inputs.ref || 'default (github.sha)' }}"
-
-          # Resolve the commit SHA to verify CI against
-          # Uses commits endpoint - works for tags, branches, and SHAs
-          if [ "${{ github.event_name }}" = "release" ]; then
-            REF="${{ github.event.release.tag_name }}"
-          elif [ -n "${{ inputs.ref }}" ]; then
-            REF="${{ inputs.ref }}"
-          else
-            REF="${{ github.sha }}"
-          fi
-
-          TARGET_SHA=$(gh api "repos/${{ github.repository }}/commits/${REF}" --jq '.sha' 2>&1) || {
-            echo "::error::Failed to resolve ref '${REF}': ${TARGET_SHA}"
-            exit 1
-          }
-          if [ -z "$TARGET_SHA" ]; then
-            echo "::error::Resolved SHA is empty for ref '${REF}'"
-            exit 1
-          fi
-          echo "Resolved ref '${REF}' to commit ${TARGET_SHA}"
-          echo "Verifying CI has passed for commit ${TARGET_SHA}..."
-
-          NOT_FOUND_COUNT=0
-
-          for i in $(seq 1 $CI_MAX_ATTEMPTS); do
-            RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
-              | jq -r '.[0].conclusion // empty')
-
-            if [ -z "$RESULT" ]; then
-              NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
-              if [ $NOT_FOUND_COUNT -ge $CI_MAX_NOT_FOUND ]; then
-                echo "::error::No CI run found for commit ${TARGET_SHA} after ${CI_MAX_NOT_FOUND} attempts. This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
-                exit 1
-              fi
-              echo "CI run not found yet, waiting... (attempt $i/$CI_MAX_ATTEMPTS, not found count: $NOT_FOUND_COUNT/$CI_MAX_NOT_FOUND)"
-              sleep $CI_POLL_INTERVAL
-              continue
-            fi
-
-            # Reset not found counter if we find a run
-            NOT_FOUND_COUNT=0
-
-            if [ "$RESULT" = "success" ]; then
-              echo "::notice::CI passed for this commit"
-              exit 0
-            elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
-              echo "::error::CI failed or was cancelled for this commit"
-              exit 1
-            fi
-
-            echo "CI still running (status: $RESULT), waiting... (attempt $i/$CI_MAX_ATTEMPTS)"
-            sleep $CI_POLL_INTERVAL
-          done
-          echo "::error::Timeout waiting for CI to complete"
-          exit 1
+        id: verify-ci
+        uses: ./.github/actions/verify-ci
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.ref || github.sha }}
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.ref || github.sha }}
+          # Use resolved SHA to prevent TOCTOU issues when ref is a tag/branch name
+          ref: ${{ steps.verify-ci.outputs.sha }}
 
       - name: Log deployment info
         run: |

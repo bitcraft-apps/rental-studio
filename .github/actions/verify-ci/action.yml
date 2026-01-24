@@ -1,0 +1,85 @@
+name: Verify CI Passed
+description: Verifies that CI has passed for a given commit before deploying
+
+inputs:
+  ref:
+    description: 'Git ref to verify CI against (commit SHA, branch, or tag)'
+    required: true
+  poll_interval:
+    description: 'Seconds between CI status checks'
+    required: false
+    default: '10'
+  max_attempts:
+    description: 'Maximum number of polling attempts'
+    required: false
+    default: '60'
+  max_not_found:
+    description: 'Maximum consecutive "not found" results before failing'
+    required: false
+    default: '6'
+
+outputs:
+  sha:
+    description: 'Resolved commit SHA that CI was verified against'
+    value: ${{ steps.verify.outputs.sha }}
+
+runs:
+  using: composite
+  steps:
+    - name: Verify CI passed
+      id: verify
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        CI_POLL_INTERVAL: ${{ inputs.poll_interval }}
+        CI_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+        CI_MAX_NOT_FOUND: ${{ inputs.max_not_found }}
+        REF: ${{ inputs.ref }}
+        REPO: ${{ github.repository }}
+      run: |
+        # Resolve the ref to a commit SHA
+        if ! TARGET_SHA=$(gh api "repos/${REPO}/commits/${REF}" --jq '.sha'); then
+          echo "::error::Failed to resolve ref '${REF}'"
+          exit 1
+        fi
+        if [ -z "$TARGET_SHA" ]; then
+          echo "::error::Resolved SHA is empty for ref '${REF}'"
+          exit 1
+        fi
+        echo "Resolved ref '${REF}' to commit ${TARGET_SHA}"
+        echo "sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
+        echo "Verifying CI has passed for commit ${TARGET_SHA}..."
+
+        NOT_FOUND_COUNT=0
+
+        for i in $(seq 1 "$CI_MAX_ATTEMPTS"); do
+          RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
+            | jq -r '.[0].conclusion // empty')
+
+          if [ -z "$RESULT" ]; then
+            NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
+            if [ "$NOT_FOUND_COUNT" -ge "$CI_MAX_NOT_FOUND" ]; then
+              echo "::error::No CI run found for commit ${TARGET_SHA} after ${CI_MAX_NOT_FOUND} attempts. This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
+              exit 1
+            fi
+            echo "CI run not found yet, waiting... (attempt $i/$CI_MAX_ATTEMPTS, not found count: $NOT_FOUND_COUNT/$CI_MAX_NOT_FOUND)"
+            sleep "$CI_POLL_INTERVAL"
+            continue
+          fi
+
+          # Reset not found counter when we find a run
+          NOT_FOUND_COUNT=0
+
+          if [ "$RESULT" = "success" ]; then
+            echo "::notice::CI passed for this commit"
+            exit 0
+          elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
+            echo "::error::CI failed or was cancelled for this commit"
+            exit 1
+          fi
+
+          echo "CI still running (status: $RESULT), waiting... (attempt $i/$CI_MAX_ATTEMPTS)"
+          sleep "$CI_POLL_INTERVAL"
+        done
+        echo "::error::Timeout waiting for CI to complete"
+        exit 1
