@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { APP_VERSION } from '@rental-studio/core';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
@@ -17,7 +18,10 @@ if (process.env.NODE_ENV !== 'test') {
 }
 app.use(
   '/static/*',
-  serveStatic({ root: './public', rewriteRequestPath: (path) => path.replace('/static', '') }),
+  serveStatic({
+    root: join(import.meta.dir, '../public'),
+    rewriteRequestPath: (path) => path.replace('/static', ''),
+  }),
 );
 
 // Health check (at root level for deployment checks)

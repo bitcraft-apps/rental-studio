@@ -8,17 +8,17 @@ import { HTTPException } from 'hono/http-exception';
  */
 export function setupErrorHandling(app: Hono) {
   app.onError((err, c) => {
+    // TODO: Replace with structured logger (e.g., pino) that includes request context
     console.error(`[ERROR] ${err.message}`, err.stack);
 
     if (err instanceof HTTPException) {
       return c.json({ error: err.message }, err.status);
     }
 
-    const status = 500;
     // In production, don't leak error details
     const message = process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
 
-    return c.json({ error: message }, status);
+    return c.json({ error: message }, 500);
   });
 
   app.notFound((c) => {
