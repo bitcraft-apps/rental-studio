@@ -22,6 +22,7 @@ runs:
         chmod 700 ~/.ssh
         # Use env vars instead of direct interpolation to prevent injection attacks
         (umask 077 && echo "$SSH_KEY" > ~/.ssh/dokku_deploy)
+        chmod 600 ~/.ssh/dokku_deploy  # SSH requires strict permissions on private keys
         # Use pre-verified host key instead of ssh-keyscan to prevent MITM attacks
         echo "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
         chmod 644 ~/.ssh/known_hosts

@@ -3,7 +3,7 @@ description: Verifies that CI has passed for a given commit before deploying.
 
 inputs:
   ref:
-    description: 'Git ref to verify CI against (commit SHA, branch, or tag)'
+    description: 'Git ref to verify CI against. Prefer full commit SHA for deterministic behavior.'
     required: true
   workflow_name:
     description: 'Name of the CI workflow to verify'
@@ -21,10 +21,6 @@ inputs:
     description: 'Maximum consecutive "not found" results before failing'
     required: false
     default: '6'
-  backoff_factor:
-    description: 'Exponential backoff multiplier (e.g., 1.5 means 50% increase each iteration)'
-    required: false
-    default: '1.5'
   backoff_max:
     description: 'Maximum backoff interval in seconds'
     required: false
@@ -46,7 +42,6 @@ runs:
         POLL_INTERVAL: ${{ inputs.poll_interval }}
         POLL_TIMEOUT: ${{ inputs.timeout }}
         POLL_MAX_NOT_FOUND: ${{ inputs.max_not_found }}
-        BACKOFF_FACTOR: ${{ inputs.backoff_factor }}
         BACKOFF_MAX: ${{ inputs.backoff_max }}
         REF: ${{ inputs.ref }}
         REPO: ${{ github.repository }}
@@ -111,8 +106,15 @@ runs:
             elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
               echo "::error::CI $RESULT for this commit"
               exit 1
-            elif [ "$RESULT" = "skipped" ]; then
-              echo "::error::CI was skipped for this commit. This may indicate path filters excluded this commit from CI, or the workflow was conditionally skipped. Manual verification required."
+            elif [ "$RESULT" = "skipped" ] || [ "$RESULT" = "neutral" ] || [ "$RESULT" = "stale" ]; then
+              echo "::error::CI concluded with '$RESULT' for this commit. Manual verification required."
+              exit 1
+            elif [ "$RESULT" = "action_required" ] || [ "$RESULT" = "timed_out" ] || [ "$RESULT" = "startup_failure" ]; then
+              echo "::error::CI concluded with '$RESULT' - requires investigation"
+              exit 1
+            elif [ "$RESULT" != "in_progress" ] && [ "$RESULT" != "queued" ] && [ "$RESULT" != "pending" ] && [ "$RESULT" != "waiting" ] && [ "$RESULT" != "requested" ]; then
+              # Unknown conclusion - fail safe rather than loop indefinitely
+              echo "::error::Unexpected CI conclusion: '$RESULT'. This may indicate a GitHub API change."
               exit 1
             fi
 
@@ -128,13 +130,7 @@ runs:
           fi
           sleep "$SLEEP_TIME"
           
-          # Exponential backoff: multiply by factor, cap at max
-          # Using bc for floating point, falling back to integer math
-          if command -v bc &> /dev/null; then
-            NEW_BACKOFF=$(echo "$BACKOFF * $BACKOFF_FACTOR" | bc | cut -d. -f1)
-          else
-            # Approximate 1.5x with integer math: * 3 / 2
-            NEW_BACKOFF=$((BACKOFF * 3 / 2))
-          fi
+          # Exponential backoff: multiply by 3/2 (≈1.5x), cap at max
+          NEW_BACKOFF=$((BACKOFF * 3 / 2))
           BACKOFF=$((NEW_BACKOFF < BACKOFF_MAX ? NEW_BACKOFF : BACKOFF_MAX))
         done
