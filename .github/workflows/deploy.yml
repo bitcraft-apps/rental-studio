@@ -18,9 +18,13 @@ on:
           - staging
           - production
 
+permissions:
+  contents: read
+  actions: read
+
 concurrency:
-  group: deploy-${{ github.event.inputs.environment || (github.event_name == 'release' && 'production' || 'staging') }}
-  cancel-in-progress: false
+  group: deploy-${{ github.event.workflow_run.head_sha || github.event_name == 'release' && 'production' || github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: true
 
 jobs:
   deploy-staging:
@@ -38,6 +42,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # For workflow_run events, checkout the exact commit that triggered CI
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup SSH
         run: |
@@ -62,6 +68,29 @@ jobs:
       url: https://rental-studio.bitcraftapps.dev
 
     steps:
+      - name: Verify CI passed
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Verifying CI has passed for commit ${{ github.sha }}..."
+          # Wait up to 5 minutes for CI to complete if still running
+          for i in {1..30}; do
+            RESULT=$(gh run list --workflow=CI --branch=main --limit=10 --json conclusion,headSha \
+              | jq -r '.[] | select(.headSha == "${{ github.sha }}") | .conclusion')
+            if [ "$RESULT" = "success" ]; then
+              echo "CI passed for this commit"
+              exit 0
+            elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
+              echo "CI failed or was cancelled for this commit"
+              exit 1
+            fi
+            echo "CI still running or not found, waiting... (attempt $i/30)"
+            sleep 10
+          done
+          echo "Timeout waiting for CI to complete"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
