@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'bun:test';
+import { Hono } from 'hono';
 import app from './index';
+import { setupErrorHandling } from './middleware/error-handler';
+
+// Test-only app that extends the main app with error-triggering routes
+const testApp = new Hono();
+testApp.route('/', app);
+testApp.get('/test-error', () => {
+  throw new Error('Test error');
+});
+setupErrorHandling(testApp);
 
 interface HealthResponse {
   status: string;
@@ -100,7 +110,7 @@ describe('Web App', () => {
     });
 
     it('should handle thrown errors gracefully', async () => {
-      const res = await app.request('/api/test-error');
+      const res = await testApp.request('/test-error');
       const body = (await res.json()) as ErrorResponse;
 
       expect(res.status).toBe(500);

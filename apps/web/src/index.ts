@@ -20,9 +20,6 @@ app.use(
   serveStatic({ root: './public', rewriteRequestPath: (path) => path.replace('/static', '') }),
 );
 
-// Error handling
-setupErrorHandling(app);
-
 // Health check (at root level for deployment checks)
 app.get('/health', (c) => {
   return c.json({
@@ -37,5 +34,8 @@ app.route('/', indexRoutes);
 app.route('/auth', authRoutes);
 app.route('/app', appRoutes);
 app.route('/api', apiRoutes);
+
+// Error handling (must be registered after routes)
+setupErrorHandling(app);
 
 export default app;
