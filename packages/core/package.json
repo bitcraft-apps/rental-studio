@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "echo 'No build step - TypeScript source consumed directly by Bun'",
     "lint": "tsc --noEmit",
     "format": "echo 'No formatter configured'"
   },
