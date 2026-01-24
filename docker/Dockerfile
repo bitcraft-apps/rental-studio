@@ -45,18 +45,10 @@ FROM base AS production
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy only production dependencies
-COPY package.json bun.lock ./
-COPY apps/web/package.json ./apps/web/
-COPY packages/core/package.json ./packages/core/
-
-RUN bun install --frozen-lockfile --production
-
-# Copy built artifacts
+# Copy built artifacts only - the bundle is fully self-contained
+# Bun.build() inlines all workspace dependencies (@rental-studio/core) and node_modules (hono)
+# No runtime dependencies needed - just copy the bundle
 COPY --from=build /app/apps/web/dist ./apps/web/dist
-# Core package exports TypeScript source directly (no build step)
-# Version is now injected at build time, so package.json is not needed at runtime
-COPY --from=build /app/packages/core/src ./packages/core/src
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

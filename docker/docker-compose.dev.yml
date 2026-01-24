@@ -26,6 +26,8 @@ services:
       - ../tsconfig.json:/app/tsconfig.json:ro
       - ../biome.json:/app/biome.json:ro
       # Prevent overwriting node_modules from container
+      # NOTE: If you update package.json or bun.lock, you'll need to rebuild the container
+      # to pick up the new dependencies: ./docker-dev.sh build
       - /app/node_modules
       - /app/apps/web/node_modules
       - /app/packages/core/node_modules

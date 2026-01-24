@@ -1,6 +1,10 @@
 /**
  * Build script for @rental-studio/web
  * Injects version information at build time to avoid runtime package.json resolution issues
+ *
+ * Note: APP_VERSION represents the application version (from web package.json), not individual
+ * package versions. This is intentional - the app version is displayed to users and should
+ * reflect the deployed application version, which is managed from the web package.
  */
 
 import packageJson from '../package.json';
