@@ -138,6 +138,8 @@ jobs:
         with:
           # Use resolved SHA to prevent TOCTOU issues when ref is a branch name
           ref: ${{ steps.validate-sha.outputs.sha }}
+          # Full clone required - Dokku rejects shallow pushes
+          fetch-depth: 0
 
       - name: Log deployment info
         run: |
@@ -224,6 +226,8 @@ jobs:
         with:
           # Use resolved SHA to prevent TOCTOU issues when ref is a tag/branch name
           ref: ${{ steps.validate-sha.outputs.sha }}
+          # Full clone required - Dokku rejects shallow pushes
+          fetch-depth: 0
 
       - name: Log deployment info
         run: |

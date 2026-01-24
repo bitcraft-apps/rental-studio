@@ -1,0 +1,7 @@
+# Dokku zero-downtime deployment checks
+# Format: WAIT=<seconds> ATTEMPTS=<count> then one check per line
+# See: https://dokku.com/docs/deployment/zero-downtime-deploys/
+
+WAIT=10
+ATTEMPTS=6
+/health
