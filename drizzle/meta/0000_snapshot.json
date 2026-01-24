@@ -1,5 +1,5 @@
 {
-  "id": "33f6a14b-f2d9-4a47-b4eb-ac09d1a3e35b",
+  "id": "6a8b56f9-18cd-4ed5-9992-09027044fc59",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -62,7 +62,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "design_projects_property_id_idx": {
+          "name": "design_projects_property_id_idx",
+          "columns": [
+            {
+              "expression": "property_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "design_projects_property_id_properties_id_fk": {
           "name": "design_projects_property_id_properties_id_fk",
@@ -135,7 +151,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "floor_plans_property_id_idx": {
+          "name": "floor_plans_property_id_idx",
+          "columns": [
+            {
+              "expression": "property_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "floor_plans_property_id_properties_id_fk": {
           "name": "floor_plans_property_id_properties_id_fk",
@@ -221,7 +253,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "hotspots_floor_plan_id_idx": {
+          "name": "hotspots_floor_plan_id_idx",
+          "columns": [
+            {
+              "expression": "floor_plan_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "hotspots_floor_plan_id_floor_plans_id_fk": {
           "name": "hotspots_floor_plan_id_floor_plans_id_fk",
@@ -240,7 +288,16 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "hotspots_position_x_check": {
+          "name": "hotspots_position_x_check",
+          "value": "\"hotspots\".\"position_x\" >= 0 AND \"hotspots\".\"position_x\" <= 1"
+        },
+        "hotspots_position_y_check": {
+          "name": "hotspots_position_y_check",
+          "value": "\"hotspots\".\"position_y\" >= 0 AND \"hotspots\".\"position_y\" <= 1"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.magic_links": {
@@ -260,8 +317,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "token": {
-          "name": "token",
+        "token_hash": {
+          "name": "token_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -286,7 +343,38 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "magic_links_user_id_idx": {
+          "name": "magic_links_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "magic_links_expires_at_idx": {
+          "name": "magic_links_expires_at_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "magic_links_user_id_users_id_fk": {
           "name": "magic_links_user_id_users_id_fk",
@@ -304,11 +392,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "magic_links_token_unique": {
-          "name": "magic_links_token_unique",
+        "magic_links_token_hash_unique": {
+          "name": "magic_links_token_hash_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "token"
+            "token_hash"
           ]
         }
       },
@@ -366,7 +454,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "properties_tenant_id_idx": {
+          "name": "properties_tenant_id_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "properties_tenant_id_tenants_id_fk": {
           "name": "properties_tenant_id_tenants_id_fk",
@@ -378,7 +482,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -439,7 +543,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "tenants_slug_check": {
+          "name": "tenants_slug_check",
+          "value": "\"tenants\".\"slug\" ~ '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.users": {
@@ -494,7 +603,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "users_tenant_id_idx": {
+          "name": "users_tenant_id_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "users_tenant_id_tenants_id_fk": {
           "name": "users_tenant_id_tenants_id_fk",
@@ -506,16 +631,17 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_email_unique": {
-          "name": "users_email_unique",
+        "users_tenant_id_email_unique": {
+          "name": "users_tenant_id_email_unique",
           "nullsNotDistinct": false,
           "columns": [
+            "tenant_id",
             "email"
           ]
         }
