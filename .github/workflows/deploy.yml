@@ -45,6 +45,26 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'workflow_run' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging') }}
 
 jobs:
+  # Observability: Log when deploy is skipped due to CI failure
+  log-ci-failure:
+    name: Log CI Failure
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
+    steps:
+      - name: Log deploy skipped
+        run: |
+          echo "::warning::Deploy to staging skipped because CI ${{ github.event.workflow_run.conclusion }} for commit ${{ github.event.workflow_run.head_sha }}"
+          {
+            echo "## Deploy Skipped"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Reason | CI ${{ github.event.workflow_run.conclusion }} |"
+            echo "| Commit | \`${{ github.event.workflow_run.head_sha }}\` |"
+            echo "| Branch | ${{ github.event.workflow_run.head_branch }} |"
+            echo "| CI Run | [View Run](${{ github.event.workflow_run.html_url }}) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
@@ -68,7 +88,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ci_verification != 'true'
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/actions/verify-ci
+          sparse-checkout: .github/actions
           sparse-checkout-cone-mode: false
 
       - name: Verify CI passed
@@ -96,25 +116,52 @@ jobs:
         run: |
           echo "::warning::BYPASSING CI VERIFICATION - This is a manual emergency deploy. Ensure you have verified the code manually."
 
+      - name: Validate resolved SHA
+        id: validate-sha
+        env:
+          SHA: ${{ steps.workflow-run-sha.outputs.sha || steps.verify-ci.outputs.sha || steps.skip-verify-sha.outputs.sha }}
+        run: |
+          if [ -z "$SHA" ]; then
+            echo "::error::No SHA resolved from any verification path. This is a bug in workflow logic."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           # Use resolved SHA to prevent TOCTOU issues when ref is a branch name
-          ref: ${{ steps.workflow-run-sha.outputs.sha || steps.verify-ci.outputs.sha || steps.skip-verify-sha.outputs.sha }}
+          ref: ${{ steps.validate-sha.outputs.sha }}
 
       - name: Log deployment info
         run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_SHORT=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --format='%s')
+          
           echo "Deploying to: staging"
-          echo "Commit: $(git rev-parse HEAD)"
-          echo "Commit message: $(git log -1 --format='%s')"
+          echo "Commit: $COMMIT_SHA"
+          echo "Commit message: $COMMIT_MSG"
           echo "Triggered by: ${{ github.event_name }}"
           echo "CI Verification: ${{ github.event.inputs.skip_ci_verification == 'true' && 'BYPASSED' || 'Passed' }}"
+          
+          {
+            echo "## Deployment Info"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Environment | staging |"
+            echo "| Commit | \`$COMMIT_SHORT\` |"
+            echo "| Message | $COMMIT_MSG |"
+            echo "| Triggered by | ${{ github.event_name }} |"
+            echo "| CI Verification | ${{ github.event.inputs.skip_ci_verification == 'true' && 'BYPASSED ⚠️' || 'Passed ✅' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          (umask 077 && echo "${{ secrets.DOKKU_SSH_KEY }}" > ~/.ssh/dokku_deploy)
-          ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
+        uses: ./.github/actions/setup-dokku-ssh
+        with:
+          ssh_key: ${{ secrets.DOKKU_SSH_KEY }}
+          host: ${{ secrets.HETZNER_HOST }}
 
       - name: Deploy to Dokku (Staging)
         run: |
@@ -141,7 +188,7 @@ jobs:
       - name: Checkout (for verify-ci action)
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/actions/verify-ci
+          sparse-checkout: .github/actions
           sparse-checkout-cone-mode: false
 
       - name: Verify CI passed
@@ -150,25 +197,53 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name || inputs.ref || github.sha }}
 
+      - name: Validate resolved SHA
+        id: validate-sha
+        env:
+          SHA: ${{ steps.verify-ci.outputs.sha }}
+        run: |
+          if [ -z "$SHA" ]; then
+            echo "::error::No SHA resolved from CI verification. This is a bug in workflow logic."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           # Use resolved SHA to prevent TOCTOU issues when ref is a tag/branch name
-          ref: ${{ steps.verify-ci.outputs.sha }}
+          ref: ${{ steps.validate-sha.outputs.sha }}
 
       - name: Log deployment info
         run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_SHORT=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --format='%s')
+          RELEASE_TAG="${{ github.event.release.tag_name || 'N/A' }}"
+          
           echo "Deploying to: production"
-          echo "Commit: $(git rev-parse HEAD)"
-          echo "Commit message: $(git log -1 --format='%s')"
+          echo "Commit: $COMMIT_SHA"
+          echo "Commit message: $COMMIT_MSG"
           echo "Triggered by: ${{ github.event_name }}"
-          echo "Release tag: ${{ github.event.release.tag_name || 'N/A' }}"
+          echo "Release tag: $RELEASE_TAG"
+          
+          {
+            echo "## Deployment Info"
+            echo ""
+            echo "| Field | Value |"
+            echo "|-------|-------|"
+            echo "| Environment | production |"
+            echo "| Commit | \`$COMMIT_SHORT\` |"
+            echo "| Message | $COMMIT_MSG |"
+            echo "| Triggered by | ${{ github.event_name }} |"
+            echo "| Release tag | $RELEASE_TAG |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          (umask 077 && echo "${{ secrets.DOKKU_SSH_KEY }}" > ~/.ssh/dokku_deploy)
-          ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
+        uses: ./.github/actions/setup-dokku-ssh
+        with:
+          ssh_key: ${{ secrets.DOKKU_SSH_KEY }}
+          host: ${{ secrets.HETZNER_HOST }}
 
       - name: Deploy to Dokku (Production)
         run: |

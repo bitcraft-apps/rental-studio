@@ -1,5 +1,5 @@
 name: Verify CI Passed
-description: Verifies that CI has passed for a given commit before deploying
+description: Verifies that CI has passed for a given commit before deploying.
 
 inputs:
   ref:
@@ -46,11 +46,18 @@ runs:
           echo "::error::Resolved SHA is empty for ref '${REF}'"
           exit 1
         fi
+        
+        # Warn about mutable refs (branch names) that could cause race conditions
+        if [[ "$REF" == "main" || "$REF" == "master" || "$REF" =~ ^refs/heads/ ]]; then
+          echo "::warning::Using branch name '${REF}' may result in race conditions if new commits are pushed. Prefer explicit commit SHAs for deterministic deploys."
+        fi
+        
         echo "Resolved ref '${REF}' to commit ${TARGET_SHA}"
         echo "sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
         echo "Verifying CI has passed for commit ${TARGET_SHA}..."
 
         NOT_FOUND_COUNT=0
+        TOTAL_NOT_FOUND=0
 
         for i in $(seq 1 "$CI_MAX_ATTEMPTS"); do
           RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
@@ -58,20 +65,27 @@ runs:
 
           if [ -z "$RESULT" ]; then
             NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
+            TOTAL_NOT_FOUND=$((TOTAL_NOT_FOUND + 1))
             if [ "$NOT_FOUND_COUNT" -ge "$CI_MAX_NOT_FOUND" ]; then
-              echo "::error::No CI run found for commit ${TARGET_SHA} after ${CI_MAX_NOT_FOUND} attempts. This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
+              echo "::error::No CI run found for commit ${TARGET_SHA} after ${CI_MAX_NOT_FOUND} consecutive attempts (total not-found: ${TOTAL_NOT_FOUND}). This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
               exit 1
             fi
-            echo "CI run not found yet, waiting... (attempt $i/$CI_MAX_ATTEMPTS, not found count: $NOT_FOUND_COUNT/$CI_MAX_NOT_FOUND)"
-            sleep "$CI_POLL_INTERVAL"
+            echo "CI run not found yet, waiting... (attempt $i/$CI_MAX_ATTEMPTS, consecutive not-found: $NOT_FOUND_COUNT/$CI_MAX_NOT_FOUND)"
+            # Add jitter (0-5 seconds) to prevent API rate limiting when multiple deploys run concurrently
+            JITTER=$((RANDOM % 6))
+            sleep "$((CI_POLL_INTERVAL + JITTER))"
             continue
           fi
 
-          # Reset not found counter when we find a run
+          # Reset consecutive not-found counter when we find a run (but keep total for observability)
           NOT_FOUND_COUNT=0
 
           if [ "$RESULT" = "success" ]; then
-            echo "::notice::CI passed for this commit"
+            if [ "$TOTAL_NOT_FOUND" -gt 0 ]; then
+              echo "::notice::CI passed for this commit (encountered ${TOTAL_NOT_FOUND} intermittent not-found responses)"
+            else
+              echo "::notice::CI passed for this commit"
+            fi
             exit 0
           elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
             echo "::error::CI failed or was cancelled for this commit"
@@ -79,7 +93,9 @@ runs:
           fi
 
           echo "CI still running (status: $RESULT), waiting... (attempt $i/$CI_MAX_ATTEMPTS)"
-          sleep "$CI_POLL_INTERVAL"
+          # Add jitter to in-progress polling as well
+          JITTER=$((RANDOM % 6))
+          sleep "$((CI_POLL_INTERVAL + JITTER))"
         done
-        echo "::error::Timeout waiting for CI to complete"
+        echo "::error::Timeout waiting for CI to complete (total not-found responses: ${TOTAL_NOT_FOUND})"
         exit 1

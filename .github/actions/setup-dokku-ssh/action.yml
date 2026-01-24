@@ -1,0 +1,20 @@
+name: Setup Dokku SSH
+description: Sets up SSH configuration for Dokku deployments.
+
+inputs:
+  ssh_key:
+    description: 'SSH private key for Dokku authentication'
+    required: true
+  host:
+    description: 'Dokku host to connect to'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup SSH
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        (umask 077 && echo "${{ inputs.ssh_key }}" > ~/.ssh/dokku_deploy)
+        ssh-keyscan -H "${{ inputs.host }}" >> ~/.ssh/known_hosts
