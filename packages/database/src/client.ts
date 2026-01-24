@@ -8,23 +8,44 @@ export type DatabaseConfig = {
   pool?: Omit<PoolConfig, 'connectionString'>;
 };
 
+/**
+ * Default pool settings:
+ * - max: 20 connections (suitable for single app instance; reduce if running multiple)
+ * - idleTimeoutMillis: 30s before idle connections are closed
+ * - connectionTimeoutMillis: 5s timeout for acquiring a connection
+ */
 const defaultPoolConfig: Omit<PoolConfig, 'connectionString'> = {
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 };
 
-export function createDb(config: DatabaseConfig) {
+export type DatabaseClient = {
+  db: ReturnType<typeof drizzle<typeof schema>>;
+  pool: Pool;
+  /** Gracefully close all connections. Call this on SIGTERM/SIGINT. */
+  close: () => Promise<void>;
+};
+
+export function createDb(config: DatabaseConfig): DatabaseClient {
   const pool = new Pool({
     connectionString: config.connectionString,
     ...defaultPoolConfig,
     ...config.pool,
   });
 
-  return drizzle(pool, { schema });
+  const db = drizzle(pool, { schema });
+
+  return {
+    db,
+    pool,
+    async close() {
+      await pool.end();
+    },
+  };
 }
 
-export type Database = ReturnType<typeof createDb>;
+export type Database = DatabaseClient['db'];
 
 /**
  * Health check for database connection.

@@ -1,5 +1,5 @@
 {
-  "id": "48ea2703-9db7-4a35-bd45-d70f441b59ba",
+  "id": "76e379e9-121b-4c78-a34c-a231ac324423",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -14,12 +14,6 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
         },
         "property_id": {
           "name": "property_id",
@@ -69,21 +63,6 @@
         }
       },
       "indexes": {
-        "design_projects_tenant_id_idx": {
-          "name": "design_projects_tenant_id_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "design_projects_property_id_idx": {
           "name": "design_projects_property_id_idx",
           "columns": [
@@ -101,19 +80,6 @@
         }
       },
       "foreignKeys": {
-        "design_projects_tenant_id_tenants_id_fk": {
-          "name": "design_projects_tenant_id_tenants_id_fk",
-          "tableFrom": "design_projects",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "design_projects_property_id_properties_id_fk": {
           "name": "design_projects_property_id_properties_id_fk",
           "tableFrom": "design_projects",

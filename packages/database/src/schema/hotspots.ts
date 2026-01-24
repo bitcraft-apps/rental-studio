@@ -14,12 +14,15 @@ import { floorPlans } from './floor-plans';
 
 export const hotspotType = pgEnum('hotspot_type', ['info', 'link', 'media', 'product']);
 
-// Discriminated union for type-safe hotspot content
+/**
+ * Content payload for each hotspot type.
+ * The `type` column on the hotspots table determines which variant applies.
+ */
 export type HotspotContent =
-  | { type: 'info'; text: string }
-  | { type: 'link'; url: string; title?: string }
-  | { type: 'media'; mediaUrl: string; mediaType: 'image' | 'video' }
-  | { type: 'product'; productId: string; name?: string; price?: number };
+  | { text: string } // type: 'info'
+  | { url: string; title?: string } // type: 'link'
+  | { mediaUrl: string; mediaType: 'image' | 'video' } // type: 'media'
+  | { productId: string; name?: string; price?: number }; // type: 'product'
 
 export const hotspots = pgTable(
   'hotspots',

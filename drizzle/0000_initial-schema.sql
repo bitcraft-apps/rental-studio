@@ -3,7 +3,6 @@ CREATE TYPE "public"."hotspot_type" AS ENUM('info', 'link', 'media', 'product');
 CREATE TYPE "public"."user_role" AS ENUM('owner', 'admin', 'member');--> statement-breakpoint
 CREATE TABLE "design_projects" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"tenant_id" uuid NOT NULL,
 	"property_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
@@ -79,14 +78,12 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_tenant_id_email_unique" UNIQUE("tenant_id","email")
 );
 --> statement-breakpoint
-ALTER TABLE "design_projects" ADD CONSTRAINT "design_projects_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "design_projects" ADD CONSTRAINT "design_projects_property_id_properties_id_fk" FOREIGN KEY ("property_id") REFERENCES "public"."properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "floor_plans" ADD CONSTRAINT "floor_plans_property_id_properties_id_fk" FOREIGN KEY ("property_id") REFERENCES "public"."properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "hotspots" ADD CONSTRAINT "hotspots_floor_plan_id_floor_plans_id_fk" FOREIGN KEY ("floor_plan_id") REFERENCES "public"."floor_plans"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "magic_links" ADD CONSTRAINT "magic_links_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "properties" ADD CONSTRAINT "properties_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "users" ADD CONSTRAINT "users_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "design_projects_tenant_id_idx" ON "design_projects" USING btree ("tenant_id");--> statement-breakpoint
 CREATE INDEX "design_projects_property_id_idx" ON "design_projects" USING btree ("property_id");--> statement-breakpoint
 CREATE INDEX "floor_plans_property_id_idx" ON "floor_plans" USING btree ("property_id");--> statement-breakpoint
 CREATE INDEX "hotspots_floor_plan_id_idx" ON "hotspots" USING btree ("floor_plan_id");--> statement-breakpoint
@@ -96,6 +93,7 @@ CREATE INDEX "properties_tenant_id_idx" ON "properties" USING btree ("tenant_id"
 CREATE INDEX "users_tenant_id_idx" ON "users" USING btree ("tenant_id");--> statement-breakpoint
 
 -- Auto-update updated_at timestamp on row modification
+-- NOTE: This trigger is manually maintained; Drizzle Kit does not generate it.
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
