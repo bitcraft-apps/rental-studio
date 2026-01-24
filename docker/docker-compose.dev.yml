@@ -21,6 +21,8 @@ services:
       # Mount config files
       # NOTE: If you add new root-level config files (e.g., drizzle.config.ts),
       # you'll need to add them here for them to be available in the container.
+      - ../drizzle.config.ts:/app/drizzle.config.ts:ro
+      - ../drizzle:/app/drizzle:cached
       - ../package.json:/app/package.json:ro
       - ../bun.lock:/app/bun.lock:ro
       - ../tsconfig.json:/app/tsconfig.json:ro
@@ -31,6 +33,7 @@ services:
       - /app/node_modules
       - /app/apps/web/node_modules
       - /app/packages/core/node_modules
+      - /app/packages/database/node_modules
     networks:
       - rental-studio-network
     # Disable healthcheck for faster dev startup

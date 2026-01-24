@@ -19,9 +19,13 @@
     "docker:prod": "docker compose -f docker/docker-compose.yml up",
     "docker:prod:build": "docker compose -f docker/docker-compose.yml up --build",
     "docker:down": "docker compose -p rental-studio down",
-    "docker:clean": "docker compose -p rental-studio down -v --rmi local"
+    "docker:clean": "docker compose -p rental-studio down -v --rmi local",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.0",
     "@biomejs/biome": "^2.3.12",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7"
