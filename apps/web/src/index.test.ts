@@ -123,6 +123,7 @@ describe('Web App', () => {
       const body = (await res.json()) as ErrorResponse;
 
       expect(res.status).toBe(500);
+      // Note: Actual error message is only exposed when NODE_ENV !== 'production'
       expect(body.error).toBe('Test error');
     });
   });

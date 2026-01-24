@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 
-const app = new Hono();
+const appRouter = new Hono();
 
 // TODO: Add auth middleware when authentication is implemented
-app.get('/', (c) => c.text('Main application'));
+appRouter.get('/', (c) => c.text('Main application'));
 
-export default app;
+export default appRouter;

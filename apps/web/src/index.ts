@@ -6,7 +6,7 @@ import { logger } from 'hono/logger';
 
 import { setupErrorHandling } from './middleware/error-handler';
 import api from './routes/api';
-import appRoutes from './routes/app';
+import appRouter from './routes/app';
 import auth from './routes/auth';
 import index from './routes/index';
 
@@ -20,7 +20,7 @@ app.use(
   '/static/*',
   serveStatic({
     root: join(import.meta.dir, '../public'),
-    rewriteRequestPath: (path) => path.replace('/static', ''),
+    rewriteRequestPath: (path) => path.slice('/static'.length),
   }),
 );
 
@@ -36,7 +36,7 @@ app.get('/health', (c) => {
 // Routes
 app.route('/', index);
 app.route('/auth', auth);
-app.route('/app', appRoutes);
+app.route('/app', appRouter);
 app.route('/api', api);
 
 // Error handling (must be registered after routes)
