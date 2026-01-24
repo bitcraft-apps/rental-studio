@@ -1,8 +1,25 @@
 import { sql } from 'drizzle-orm';
-import { check, index, pgEnum, pgTable, real, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  check,
+  index,
+  jsonb,
+  pgEnum,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { floorPlans } from './floor-plans';
 
 export const hotspotType = pgEnum('hotspot_type', ['info', 'link', 'media', 'product']);
+
+// Discriminated union for type-safe hotspot content
+export type HotspotContent =
+  | { type: 'info'; text: string }
+  | { type: 'link'; url: string; title?: string }
+  | { type: 'media'; mediaUrl: string; mediaType: 'image' | 'video' }
+  | { type: 'product'; productId: string; name?: string; price?: number };
 
 export const hotspots = pgTable(
   'hotspots',
@@ -16,8 +33,8 @@ export const hotspots = pgTable(
     // Position as percentage of image dimensions (0.0 - 1.0)
     positionX: real('position_x').notNull(),
     positionY: real('position_y').notNull(),
-    // Flexible content storage (JSON or text depending on type)
-    content: text('content'),
+    // Typed content based on hotspot type
+    content: jsonb('content').$type<HotspotContent>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

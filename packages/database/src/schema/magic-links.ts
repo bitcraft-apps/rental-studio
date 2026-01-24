@@ -13,6 +13,8 @@ export const magicLinks = pgTable(
     tokenHash: text('token_hash').notNull().unique(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     usedAt: timestamp('used_at', { withTimezone: true }),
+    // Track IP for rate limiting and audit purposes
+    ipAddress: text('ip_address'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

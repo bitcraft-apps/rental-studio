@@ -6,7 +6,7 @@ export type PropertyMetadata = {
   bedrooms?: number;
   bathrooms?: number;
   yearBuilt?: number;
-  [key: string]: unknown;
+  customFields?: Record<string, unknown>;
 };
 
 export const properties = pgTable(
