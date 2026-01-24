@@ -1,0 +1,28 @@
+name: Setup Dokku SSH
+description: Sets up SSH configuration for Dokku deployments.
+
+inputs:
+  ssh_key:
+    description: 'SSH private key for Dokku authentication'
+    required: true
+  known_hosts:
+    description: 'Pre-verified known_hosts entry for the Dokku host (avoids MITM vulnerability of ssh-keyscan)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup SSH
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh_key }}
+        KNOWN_HOSTS: ${{ inputs.known_hosts }}
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        # Use env vars instead of direct interpolation to prevent injection attacks
+        (umask 077 && echo "$SSH_KEY" > ~/.ssh/dokku_deploy)
+        chmod 600 ~/.ssh/dokku_deploy  # SSH requires strict permissions on private keys
+        # Use pre-verified host key instead of ssh-keyscan to prevent MITM attacks
+        echo "$KNOWN_HOSTS" >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
