@@ -1,5 +1,5 @@
 {
-  "id": "76e379e9-121b-4c78-a34c-a231ac324423",
+  "id": "e453622e-f94f-470f-8f83-05dda886e4eb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -552,7 +552,7 @@
       "checkConstraints": {
         "tenants_slug_check": {
           "name": "tenants_slug_check",
-          "value": "\"tenants\".\"slug\" ~ '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'"
+          "value": "\"tenants\".\"slug\" ~ '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'"
         }
       },
       "isRLSEnabled": false
@@ -653,7 +653,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "users_email_check": {
+          "name": "users_email_check",
+          "value": "\"users\".\"email\" ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}$'"
+        }
+      },
       "isRLSEnabled": false
     }
   },

@@ -6,6 +6,10 @@ import * as schema from './schema';
 export type DatabaseConfig = {
   connectionString: string;
   pool?: Omit<PoolConfig, 'connectionString'>;
+  /** Enable SSL for production connections. Defaults to true if NODE_ENV=production. */
+  ssl?: boolean | { rejectUnauthorized: boolean };
+  /** Optional error handler for pool errors. Defaults to console.error. */
+  onPoolError?: (err: Error) => void;
 };
 
 /**
@@ -28,11 +32,21 @@ export type DatabaseClient = {
 };
 
 export function createDb(config: DatabaseConfig): DatabaseClient {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const ssl = config.ssl ?? (isProduction ? { rejectUnauthorized: true } : false);
+
   const pool = new Pool({
     connectionString: config.connectionString,
     ...defaultPoolConfig,
     ...config.pool,
+    ssl,
   });
+
+  // Handle unexpected pool errors to prevent unhandled rejections
+  pool.on(
+    'error',
+    config.onPoolError ?? ((err) => console.error('Unexpected database pool error:', err)),
+  );
 
   const db = drizzle(pool, { schema });
 

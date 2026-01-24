@@ -1,4 +1,5 @@
-import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { check, index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 
 export const userRole = pgEnum('user_role', ['owner', 'admin', 'member']);
@@ -20,6 +21,11 @@ export const users = pgTable(
     // Email unique per tenant, not globally
     tenantEmailUnique: unique('users_tenant_id_email_unique').on(table.tenantId, table.email),
     tenantIdx: index('users_tenant_id_idx').on(table.tenantId),
+    // Basic email format validation
+    emailCheck: check(
+      'users_email_check',
+      sql`${table.email} ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'`,
+    ),
   }),
 );
 

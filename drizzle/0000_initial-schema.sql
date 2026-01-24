@@ -64,7 +64,7 @@ CREATE TABLE "tenants" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "tenants_slug_unique" UNIQUE("slug"),
-	CONSTRAINT "tenants_slug_check" CHECK ("tenants"."slug" ~ '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$')
+	CONSTRAINT "tenants_slug_check" CHECK ("tenants"."slug" ~ '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$')
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -75,7 +75,8 @@ CREATE TABLE "users" (
 	"role" "user_role" DEFAULT 'member' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "users_tenant_id_email_unique" UNIQUE("tenant_id","email")
+	CONSTRAINT "users_tenant_id_email_unique" UNIQUE("tenant_id","email"),
+	CONSTRAINT "users_email_check" CHECK ("users"."email" ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}$')
 );
 --> statement-breakpoint
 ALTER TABLE "design_projects" ADD CONSTRAINT "design_projects_property_id_properties_id_fk" FOREIGN KEY ("property_id") REFERENCES "public"."properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

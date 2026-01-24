@@ -11,10 +11,11 @@ export const tenants = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    // Slug must be lowercase alphanumeric with hyphens, 3-63 chars
+    // Slug must be lowercase alphanumeric with hyphens, 2-63 chars
+    // Pattern: start with alphanumeric, optional middle chars (alphanumeric or hyphen), end with alphanumeric
     slugCheck: check(
       'tenants_slug_check',
-      sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$'`,
+      sql`${table.slug} ~ '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'`,
     ),
   }),
 );
