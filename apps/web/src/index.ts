@@ -1,12 +1,34 @@
-import { APP_NAME, APP_VERSION } from '@rental-studio/core';
+import { join } from 'node:path';
+import { APP_VERSION } from '@rental-studio/core';
 import { Hono } from 'hono';
+import { serveStatic } from 'hono/bun';
+import { logger } from 'hono/logger';
+
+import { setupErrorHandling } from './middleware/error-handler';
+import api from './routes/api';
+import appRouter from './routes/app';
+import auth from './routes/auth';
+import index from './routes/index';
 
 const app = new Hono();
 
-app.get('/', (c) => {
-  return c.text(`Welcome to ${APP_NAME}`);
-});
+// Middleware
+if (process.env.NODE_ENV !== 'test') {
+  app.use(logger());
+}
 
+// TODO: Add request ID middleware for request tracing and log correlation
+
+const STATIC_PREFIX = '/static';
+app.use(
+  `${STATIC_PREFIX}/*`,
+  serveStatic({
+    root: join(import.meta.dir, '../public'),
+    rewriteRequestPath: (path) => path.slice(STATIC_PREFIX.length),
+  }),
+);
+
+// Health check (at root level for deployment checks)
 app.get('/health', (c) => {
   return c.json({
     status: 'ok',
@@ -14,5 +36,14 @@ app.get('/health', (c) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Routes
+app.route('/', index);
+app.route('/auth', auth);
+app.route('/app', appRouter);
+app.route('/api', api);
+
+// Error handling (must be registered after routes)
+setupErrorHandling(app);
 
 export default app;
