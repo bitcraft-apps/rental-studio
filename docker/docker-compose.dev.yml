@@ -1,0 +1,43 @@
+# Rental Studio - Docker Compose (Development Override)
+# Usage: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up
+
+name: rental-studio
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: rental-studio-web-dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-rental_studio}
+    volumes:
+      # Mount source code for hot-reload
+      - ../apps:/app/apps:cached
+      - ../packages:/app/packages:cached
+      # Mount config files
+      # NOTE: If you add new root-level config files (e.g., drizzle.config.ts),
+      # you'll need to add them here for them to be available in the container.
+      - ../package.json:/app/package.json:ro
+      - ../bun.lock:/app/bun.lock:ro
+      - ../tsconfig.json:/app/tsconfig.json:ro
+      - ../biome.json:/app/biome.json:ro
+      # Prevent overwriting node_modules from container
+      # NOTE: If you update package.json or bun.lock, you'll need to rebuild the container
+      # to pick up the new dependencies: ./docker-dev.sh build
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/packages/core/node_modules
+    networks:
+      - rental-studio-network
+    # Disable healthcheck for faster dev startup
+    healthcheck:
+      disable: true
+
+  # Override postgres to expose port for local development
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"

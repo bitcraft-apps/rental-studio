@@ -1,0 +1,64 @@
+# Rental Studio - Docker Compose (Production)
+# Usage: docker compose -f docker/docker-compose.yml up --build
+
+name: rental-studio
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: rental-studio-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB must be set in .env
+      - DATABASE_URL=postgresql://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rental-studio-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rental-studio-postgres
+    restart: unless-stopped
+    environment:
+      # Required - will fail if not set in .env
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # NOTE: Port exposure is for local development/testing only.
+    # For production deployments, remove or comment out the ports section
+    # to keep PostgreSQL accessible only within the Docker network.
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - rental-studio-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  rental-studio-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

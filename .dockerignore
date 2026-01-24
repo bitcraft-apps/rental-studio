@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+*.tsbuildinfo
+
+# Environment variables (use docker-compose env instead)
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Docker files (avoid recursive copy)
+docker/
+
+# CI/CD
+.github/
+
+# Husky hooks
+.husky/
+
+# Biome cache
+.biome/
