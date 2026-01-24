@@ -1,6 +1,8 @@
 # Rental Studio - Docker Compose (Development Override)
 # Usage: docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up
 
+name: rental-studio
+
 services:
   web:
     build:

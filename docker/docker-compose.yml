@@ -1,6 +1,8 @@
 # Rental Studio - Docker Compose (Production)
 # Usage: docker compose -f docker/docker-compose.yml up --build
 
+name: rental-studio
+
 services:
   web:
     build:

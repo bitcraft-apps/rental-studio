@@ -17,8 +17,8 @@
     "docker:dev:build": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build",
     "docker:prod": "docker compose -f docker/docker-compose.yml up",
     "docker:prod:build": "docker compose -f docker/docker-compose.yml up --build",
-    "docker:down": "docker compose -f docker/docker-compose.yml down",
-    "docker:clean": "docker compose -f docker/docker-compose.yml down -v --rmi local"
+    "docker:down": "docker compose -p rental-studio down",
+    "docker:clean": "docker compose -p rental-studio down -v --rmi local"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.12",
