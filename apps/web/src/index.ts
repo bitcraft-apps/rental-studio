@@ -1,7 +1,6 @@
 import { APP_VERSION } from '@rental-studio/core';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
-import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
 import { setupErrorHandling } from './middleware/error-handler';
@@ -13,10 +12,13 @@ import indexRoutes from './routes/index';
 const app = new Hono();
 
 // Middleware
-app.use(logger());
-// TODO: Configure allowed origins before adding authentication (currently allows all origins)
-app.use('/api/*', cors());
-app.use('/static/*', serveStatic({ root: './public' }));
+if (process.env.NODE_ENV !== 'test') {
+  app.use(logger());
+}
+app.use(
+  '/static/*',
+  serveStatic({ root: './public', rewriteRequestPath: (path) => path.replace('/static', '') }),
+);
 
 // Error handling
 setupErrorHandling(app);

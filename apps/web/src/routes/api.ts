@@ -1,8 +1,15 @@
 import { APP_VERSION } from '@rental-studio/core';
 import { Hono } from 'hono';
 
-const route = new Hono();
+const api = new Hono();
 
-route.get('/version', (c) => c.json({ version: APP_VERSION }));
+api.get('/version', (c) => c.json({ version: APP_VERSION }));
 
-export default route;
+// Test-only route for error handling verification
+if (process.env.NODE_ENV === 'test') {
+  api.get('/test-error', () => {
+    throw new Error('Test error');
+  });
+}
+
+export default api;

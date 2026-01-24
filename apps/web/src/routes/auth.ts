@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 
-const route = new Hono();
+const auth = new Hono();
 
 // Placeholder routes - to be implemented with actual authentication
-route.get('/login', (c) => c.text('Login page'));
-route.post('/logout', (c) => c.text('Logout'));
+auth.get('/login', (c) => c.text('Login page'));
+auth.post('/logout', (c) => c.text('Logout'));
 
-export default route;
+export default auth;

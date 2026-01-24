@@ -1,8 +1,8 @@
 import { APP_NAME } from '@rental-studio/core';
 import { Hono } from 'hono';
 
-const route = new Hono();
+const index = new Hono();
 
-route.get('/', (c) => c.text(`Welcome to ${APP_NAME}`));
+index.get('/', (c) => c.text(`Welcome to ${APP_NAME}`));
 
-export default route;
+export default index;

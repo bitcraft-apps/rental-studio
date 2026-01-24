@@ -79,26 +79,6 @@ describe('Web App', () => {
       expect(res.status).toBe(200);
       expect(body.version).toBeDefined();
     });
-
-    it('should include CORS headers on preflight', async () => {
-      const res = await app.request('/api/version', {
-        method: 'OPTIONS',
-        headers: {
-          Origin: 'http://example.com',
-          'Access-Control-Request-Method': 'GET',
-        },
-      });
-
-      expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
-    });
-
-    it('should include CORS headers on actual requests', async () => {
-      const res = await app.request('/api/version', {
-        headers: { Origin: 'http://example.com' },
-      });
-
-      expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
-    });
   });
 
   describe('Error handling', () => {
@@ -117,6 +97,14 @@ describe('Web App', () => {
 
       expect(res.status).toBe(404);
       expect(body.error).toBe('Not Found');
+    });
+
+    it('should handle thrown errors gracefully', async () => {
+      const res = await app.request('/api/test-error');
+      const body = (await res.json()) as ErrorResponse;
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe('Test error');
     });
   });
 });
