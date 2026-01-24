@@ -174,10 +174,11 @@ jobs:
       - name: Deploy to Dokku (Staging)
         run: |
           git remote add dokku dokku@${{ secrets.HETZNER_HOST }}:rental-studio-staging || true
-          if ! GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force; then
-            echo "::error::Deployment to staging failed"
+          if ! OUTPUT=$(GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force 2>&1); then
+            echo "::error::Deployment to staging failed: ${OUTPUT}"
             exit 1
           fi
+          echo "$OUTPUT"
           echo "::notice::Deployment to staging completed successfully"
 
   deploy-production:
@@ -260,8 +261,9 @@ jobs:
       - name: Deploy to Dokku (Production)
         run: |
           git remote add dokku dokku@${{ secrets.HETZNER_HOST }}:rental-studio || true
-          if ! GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force; then
-            echo "::error::Deployment to production failed"
+          if ! OUTPUT=$(GIT_SSH_COMMAND="ssh -i ~/.ssh/dokku_deploy" git push dokku HEAD:main --force 2>&1); then
+            echo "::error::Deployment to production failed: ${OUTPUT}"
             exit 1
           fi
+          echo "$OUTPUT"
           echo "::notice::Deployment to production completed successfully"

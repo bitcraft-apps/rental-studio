@@ -10,17 +10,25 @@ inputs:
     required: false
     default: 'CI'
   poll_interval:
-    description: 'Seconds between CI status checks'
+    description: 'Initial seconds between CI status checks'
     required: false
     default: '10'
-  max_attempts:
-    description: 'Maximum number of polling attempts'
+  timeout:
+    description: 'Maximum seconds to wait for CI to complete (wall-clock timeout)'
     required: false
-    default: '60'
+    default: '600'
   max_not_found:
     description: 'Maximum consecutive "not found" results before failing'
     required: false
     default: '6'
+  backoff_factor:
+    description: 'Exponential backoff multiplier (e.g., 1.5 means 50% increase each iteration)'
+    required: false
+    default: '1.5'
+  backoff_max:
+    description: 'Maximum backoff interval in seconds'
+    required: false
+    default: '60'
 
 outputs:
   sha:
@@ -36,8 +44,10 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         POLL_INTERVAL: ${{ inputs.poll_interval }}
-        POLL_MAX_ATTEMPTS: ${{ inputs.max_attempts }}
+        POLL_TIMEOUT: ${{ inputs.timeout }}
         POLL_MAX_NOT_FOUND: ${{ inputs.max_not_found }}
+        BACKOFF_FACTOR: ${{ inputs.backoff_factor }}
+        BACKOFF_MAX: ${{ inputs.backoff_max }}
         REF: ${{ inputs.ref }}
         REPO: ${{ github.repository }}
         WORKFLOW_NAME: ${{ inputs.workflow_name }}
@@ -52,20 +62,30 @@ runs:
           exit 1
         fi
         
-        # Warn about mutable refs (branch names) that could cause race conditions
-        if [[ "$REF" == "main" || "$REF" == "master" || "$REF" =~ ^refs/heads/ ]]; then
-          echo "::warning::Using branch name '${REF}' may result in race conditions if new commits are pushed. Prefer explicit commit SHAs for deterministic deploys."
+        # Warn about mutable refs - only 40-char hex SHAs are immutable
+        if ! [[ "$REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
+          echo "::warning::Using mutable ref '${REF}' may result in race conditions if new commits are pushed. Prefer explicit commit SHAs for deterministic deploys."
         fi
         
         echo "Resolved ref '${REF}' to commit ${TARGET_SHA}"
         echo "sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
         echo "Verifying CI has passed for commit ${TARGET_SHA}..."
+        echo "Timeout: ${POLL_TIMEOUT}s, Initial interval: ${POLL_INTERVAL}s, Backoff max: ${BACKOFF_MAX}s"
 
         NOT_FOUND_COUNT=0
         TOTAL_NOT_FOUND=0
         BACKOFF=$POLL_INTERVAL
+        START_TIME=$(date +%s)
 
-        for i in $(seq 1 "$POLL_MAX_ATTEMPTS"); do
+        while true; do
+          ELAPSED=$(($(date +%s) - START_TIME))
+          if [ "$ELAPSED" -ge "$POLL_TIMEOUT" ]; then
+            echo "::error::Timeout after ${ELAPSED}s waiting for CI to complete (total not-found responses: ${TOTAL_NOT_FOUND})"
+            exit 1
+          fi
+          
+          REMAINING=$((POLL_TIMEOUT - ELAPSED))
+          
           RESULT=$(gh run list --workflow="$WORKFLOW_NAME" --commit="${TARGET_SHA}" --limit=1 --json conclusion \
             | jq -r '.[0].conclusion // empty')
 
@@ -76,36 +96,45 @@ runs:
               echo "::error::No CI run found for commit ${TARGET_SHA} after ${POLL_MAX_NOT_FOUND} consecutive attempts (total not-found: ${TOTAL_NOT_FOUND}). This commit may not have had CI run against it, or the CI run may have been garbage-collected (runs are retained ~90 days)."
               exit 1
             fi
-            echo "CI run not found yet, waiting ${BACKOFF}s... (attempt $i/$POLL_MAX_ATTEMPTS, consecutive not-found: $NOT_FOUND_COUNT/$POLL_MAX_NOT_FOUND)"
-            # Add jitter (1-5s) to prevent API rate limiting when multiple deploys run concurrently
-            JITTER=$((RANDOM % 5 + 1))
-            sleep "$((BACKOFF + JITTER))"
-            # Exponential backoff with 60s cap
-            BACKOFF=$((BACKOFF * 3 / 2 < 60 ? BACKOFF * 3 / 2 : 60))
-            continue
-          fi
+            echo "CI run not found yet, waiting ${BACKOFF}s... (elapsed: ${ELAPSED}s/${POLL_TIMEOUT}s, consecutive not-found: $NOT_FOUND_COUNT/$POLL_MAX_NOT_FOUND)"
+          else
+            # Reset consecutive not-found counter when we find a run (but keep total for observability)
+            NOT_FOUND_COUNT=0
 
-          # Reset consecutive not-found counter when we find a run (but keep total for observability)
-          NOT_FOUND_COUNT=0
-
-          if [ "$RESULT" = "success" ]; then
-            if [ "$TOTAL_NOT_FOUND" -gt 0 ]; then
-              echo "::notice::CI passed for this commit (encountered ${TOTAL_NOT_FOUND} intermittent not-found responses)"
-            else
-              echo "::notice::CI passed for this commit"
+            if [ "$RESULT" = "success" ]; then
+              if [ "$TOTAL_NOT_FOUND" -gt 0 ]; then
+                echo "::notice::CI passed for this commit (encountered ${TOTAL_NOT_FOUND} intermittent not-found responses)"
+              else
+                echo "::notice::CI passed for this commit"
+              fi
+              exit 0
+            elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
+              echo "::error::CI $RESULT for this commit"
+              exit 1
+            elif [ "$RESULT" = "skipped" ]; then
+              echo "::error::CI was skipped for this commit. This may indicate path filters excluded this commit from CI, or the workflow was conditionally skipped. Manual verification required."
+              exit 1
             fi
-            exit 0
-          elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
-            echo "::error::CI failed or was cancelled for this commit"
-            exit 1
-          fi
 
-          echo "CI still running (status: $RESULT), waiting ${BACKOFF}s... (attempt $i/$POLL_MAX_ATTEMPTS)"
-          # Add jitter (1-5s) to prevent API rate limiting
+            echo "CI still running (status: $RESULT), waiting ${BACKOFF}s... (elapsed: ${ELAPSED}s/${POLL_TIMEOUT}s)"
+          fi
+          
+          # Add jitter (1-5s) to prevent API rate limiting when multiple deploys run concurrently
           JITTER=$((RANDOM % 5 + 1))
-          sleep "$((BACKOFF + JITTER))"
-          # Exponential backoff with 60s cap
-          BACKOFF=$((BACKOFF * 3 / 2 < 60 ? BACKOFF * 3 / 2 : 60))
+          SLEEP_TIME=$((BACKOFF + JITTER))
+          # Don't sleep longer than remaining timeout
+          if [ "$SLEEP_TIME" -gt "$REMAINING" ]; then
+            SLEEP_TIME=$REMAINING
+          fi
+          sleep "$SLEEP_TIME"
+          
+          # Exponential backoff: multiply by factor, cap at max
+          # Using bc for floating point, falling back to integer math
+          if command -v bc &> /dev/null; then
+            NEW_BACKOFF=$(echo "$BACKOFF * $BACKOFF_FACTOR" | bc | cut -d. -f1)
+          else
+            # Approximate 1.5x with integer math: * 3 / 2
+            NEW_BACKOFF=$((BACKOFF * 3 / 2))
+          fi
+          BACKOFF=$((NEW_BACKOFF < BACKOFF_MAX ? NEW_BACKOFF : BACKOFF_MAX))
         done
-        echo "::error::Timeout waiting for CI to complete (total not-found responses: ${TOTAL_NOT_FOUND})"
-        exit 1
