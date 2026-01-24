@@ -16,11 +16,15 @@ const app = new Hono();
 if (process.env.NODE_ENV !== 'test') {
   app.use(logger());
 }
+
+// TODO: Add request ID middleware for request tracing and log correlation
+
+const STATIC_PREFIX = '/static';
 app.use(
-  '/static/*',
+  `${STATIC_PREFIX}/*`,
   serveStatic({
     root: join(import.meta.dir, '../public'),
-    rewriteRequestPath: (path) => path.slice('/static'.length),
+    rewriteRequestPath: (path) => path.slice(STATIC_PREFIX.length),
   }),
 );
 
