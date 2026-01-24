@@ -19,6 +19,8 @@ services:
       - ../apps:/app/apps:cached
       - ../packages:/app/packages:cached
       # Mount config files
+      # NOTE: If you add new root-level config files (e.g., drizzle.config.ts),
+      # you'll need to add them here for them to be available in the container.
       - ../package.json:/app/package.json:ro
       - ../bun.lock:/app/bun.lock:ro
       - ../tsconfig.json:/app/tsconfig.json:ro
