@@ -1,0 +1,19 @@
+{
+  "name": "@rental-studio/web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun run dist/index.js"
+  },
+  "dependencies": {
+    "@rental-studio/core": "workspace:*",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}
