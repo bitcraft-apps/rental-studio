@@ -7,8 +7,9 @@
     "dev": "bun run --hot src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun run dist/index.js",
-    "lint": "tsc --noEmit",
-    "format": "echo 'No formatter configured'"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write ."
   },
   "dependencies": {
     "@rental-studio/core": "workspace:*",
