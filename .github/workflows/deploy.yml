@@ -23,8 +23,14 @@ permissions:
   actions: read
 
 concurrency:
-  group: deploy-${{ github.event.workflow_run.head_sha || github.event_name == 'release' && 'production' || github.event.inputs.environment || 'staging' }}
-  cancel-in-progress: true
+  group: >-
+    deploy-${{
+      github.event_name == 'workflow_run' && format('ci-{0}', github.event.workflow_run.head_sha)
+      || github.event_name == 'release' && 'production'
+      || github.event.inputs.environment
+      || 'staging'
+    }}
+  cancel-in-progress: false
 
 jobs:
   deploy-staging:
@@ -69,15 +75,18 @@ jobs:
 
     steps:
       - name: Verify CI passed
-        if: github.event_name == 'release'
+        if: |
+          github.event_name == 'release' ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "Verifying CI has passed for commit ${{ github.sha }}..."
+          TARGET_SHA=${{ github.event.workflow_run.head_sha || github.sha }}
+          echo "Verifying CI has passed for commit ${TARGET_SHA}..."
           # Wait up to 5 minutes for CI to complete if still running
           for i in {1..30}; do
-            RESULT=$(gh run list --workflow=CI --branch=main --limit=10 --json conclusion,headSha \
-              | jq -r '.[] | select(.headSha == "${{ github.sha }}") | .conclusion')
+            RESULT=$(gh run list --workflow=CI --commit=${TARGET_SHA} --limit=1 --json conclusion \
+              | jq -r '.[0].conclusion // empty')
             if [ "$RESULT" = "success" ]; then
               echo "CI passed for this commit"
               exit 0
@@ -95,6 +104,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup SSH
         run: |
