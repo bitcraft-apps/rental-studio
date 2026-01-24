@@ -66,6 +66,9 @@ jobs:
           echo "Commit: $(git rev-parse HEAD)"
           echo "Commit message: $(git log -1 --format='%s')"
           echo "Triggered by: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::warning::BYPASSING CI VERIFICATION - This is a manual emergency deploy. Ensure you have verified the code manually."
+          fi
 
       - name: Setup SSH
         run: |
@@ -96,39 +99,61 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          echo "Production deploy triggered by: ${{ github.event_name }}"
+          echo "Target ref: ${{ github.event.release.tag_name || inputs.ref || 'default (github.sha)' }}"
+
           # Resolve the commit SHA to verify CI against
           if [ "${{ github.event_name }}" = "release" ]; then
             # Use commits endpoint - works for both lightweight and annotated tags
-            TARGET_SHA=$(gh api repos/${{ github.repository }}/commits/${{ github.event.release.tag_name }} --jq '.sha')
+            TARGET_SHA=$(gh api repos/${{ github.repository }}/commits/${{ github.event.release.tag_name }} --jq '.sha') || {
+              echo "::error::Failed to resolve tag to commit SHA"
+              exit 1
+            }
+            if [ -z "$TARGET_SHA" ]; then
+              echo "::error::Resolved SHA is empty"
+              exit 1
+            fi
             echo "Resolved tag ${{ github.event.release.tag_name }} to commit ${TARGET_SHA}"
           else
             TARGET_SHA="${{ inputs.ref || github.sha }}"
           fi
           echo "Verifying CI has passed for commit ${TARGET_SHA}..."
 
-          # Wait up to 5 minutes for CI to complete if still running
-          for i in {1..30}; do
+          # Track consecutive "not found" attempts - fail fast for old commits
+          NOT_FOUND_COUNT=0
+          MAX_NOT_FOUND=6  # 1 minute of not finding = commit likely never had CI
+
+          # Wait up to 10 minutes for CI to complete if still running
+          for i in {1..60}; do
             RESULT=$(gh run list --workflow=CI --commit="${TARGET_SHA}" --limit=1 --json conclusion \
               | jq -r '.[0].conclusion // empty')
 
             if [ -z "$RESULT" ]; then
-              echo "CI run not found yet, waiting... (attempt $i/30)"
+              NOT_FOUND_COUNT=$((NOT_FOUND_COUNT + 1))
+              if [ $NOT_FOUND_COUNT -ge $MAX_NOT_FOUND ]; then
+                echo "::error::No CI run found for commit ${TARGET_SHA} after ${MAX_NOT_FOUND} attempts. This commit may not have had CI run against it."
+                exit 1
+              fi
+              echo "CI run not found yet, waiting... (attempt $i/60, not found count: $NOT_FOUND_COUNT/$MAX_NOT_FOUND)"
               sleep 10
               continue
             fi
+
+            # Reset not found counter if we find a run
+            NOT_FOUND_COUNT=0
 
             if [ "$RESULT" = "success" ]; then
               echo "CI passed for this commit"
               exit 0
             elif [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
-              echo "CI failed or was cancelled for this commit"
+              echo "::error::CI failed or was cancelled for this commit"
               exit 1
             fi
 
-            echo "CI still running (status: $RESULT), waiting... (attempt $i/30)"
+            echo "CI still running (status: $RESULT), waiting... (attempt $i/60)"
             sleep 10
           done
-          echo "Timeout waiting for CI to complete"
+          echo "::error::Timeout waiting for CI to complete"
           exit 1
 
       - name: Checkout
