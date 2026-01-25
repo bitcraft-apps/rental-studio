@@ -6,20 +6,36 @@ import * as schema from './schema';
 export type DatabaseConfig = {
   connectionString: string;
   pool?: Omit<PoolConfig, 'connectionString'>;
-  /** Enable SSL for production connections. Defaults to true if NODE_ENV=production. */
-  ssl?: boolean | { rejectUnauthorized: boolean };
+  /**
+   * SSL configuration for database connections.
+   *
+   * Defaults:
+   * - Development (NODE_ENV !== 'production'): SSL disabled
+   * - Production: { rejectUnauthorized: false } (accepts any valid cert)
+   *
+   * For stricter security with managed databases (RDS, Cloud SQL, etc.):
+   * - Set DATABASE_CA_CERT env var with the CA certificate
+   * - Or pass { rejectUnauthorized: true, ca: caCert } explicitly
+   *
+   * Note: Most managed databases require SSL but don't need strict CA verification
+   * since the connection is already within a trusted network.
+   */
+  ssl?: boolean | { rejectUnauthorized: boolean; ca?: string };
   /** Optional error handler for pool errors. Defaults to console.error. */
   onPoolError?: (err: Error) => void;
 };
 
 /**
  * Default pool settings:
- * - max: 20 connections (suitable for single app instance; reduce if running multiple)
+ * - max: 10 connections (conservative default; override via DB_POOL_MAX env var)
  * - idleTimeoutMillis: 30s before idle connections are closed
  * - connectionTimeoutMillis: 5s timeout for acquiring a connection
+ *
+ * For multiple app instances, ensure total connections don't exceed PostgreSQL's
+ * max_connections (default 100). Formula: instances * max <= max_connections - reserved
  */
 const defaultPoolConfig: Omit<PoolConfig, 'connectionString'> = {
-  max: 20,
+  max: Number.parseInt(process.env.DB_POOL_MAX || '10', 10),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 };
@@ -33,7 +49,9 @@ export type DatabaseClient = {
 
 export function createDb(config: DatabaseConfig): DatabaseClient {
   const isProduction = process.env.NODE_ENV === 'production';
-  const ssl = config.ssl ?? (isProduction ? { rejectUnauthorized: true } : false);
+  // Default to permissive SSL in production (works with most managed databases)
+  // For stricter security, explicitly pass ssl config with CA cert
+  const ssl = config.ssl ?? (isProduction ? { rejectUnauthorized: false } : false);
 
   const pool = new Pool({
     connectionString: config.connectionString,

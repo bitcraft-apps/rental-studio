@@ -656,7 +656,7 @@
       "checkConstraints": {
         "users_email_check": {
           "name": "users_email_check",
-          "value": "\"users\".\"email\" ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+.[A-Za-z]{2,}$'"
+          "value": "\"users\".\"email\" ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
         }
       },
       "isRLSEnabled": false

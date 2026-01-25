@@ -17,6 +17,14 @@ export const hotspotType = pgEnum('hotspot_type', ['info', 'link', 'media', 'pro
 /**
  * Content payload for each hotspot type.
  * The `type` column on the hotspots table determines which variant applies.
+ *
+ * IMPORTANT: There is no database-level enforcement that content matches the type.
+ * Add Zod validation in the application layer when inserting/updating hotspots:
+ *
+ * @example
+ * const InfoContent = z.object({ text: z.string() });
+ * const LinkContent = z.object({ url: z.string().url(), title: z.string().optional() });
+ * // ... then validate based on hotspot.type before insert/update
  */
 export type HotspotContent =
   | { text: string } // type: 'info'

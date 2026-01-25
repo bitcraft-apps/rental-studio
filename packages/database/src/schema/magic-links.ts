@@ -1,6 +1,18 @@
 import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
+/**
+ * Magic Links for passwordless authentication.
+ *
+ * TOKEN GENERATION REQUIREMENTS:
+ * - Generate tokens using crypto.randomBytes(32) (256 bits of entropy)
+ * - Store SHA-256 hash of the token, never the plain token
+ * - On unique constraint violation (extremely unlikely), regenerate and retry
+ *
+ * CLEANUP:
+ * - Implement a scheduled job to purge expired/used tokens
+ * - Example: DELETE FROM magic_links WHERE expires_at < NOW() - INTERVAL '7 days'
+ */
 export const magicLinks = pgTable(
   'magic_links',
   {
