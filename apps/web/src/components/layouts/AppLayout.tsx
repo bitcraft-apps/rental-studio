@@ -25,9 +25,11 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                 </li>
               </ul>
             </div>
-            <a href="/auth/logout" class="text-gray-500 hover:text-gray-700">
-              Logout
-            </a>
+            <form method="post" action="/auth/logout" class="inline">
+              <button type="submit" class="logout-btn">
+                Logout
+              </button>
+            </form>
           </div>
         </nav>
       </header>

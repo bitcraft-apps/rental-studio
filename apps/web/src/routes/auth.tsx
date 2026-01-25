@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Alert, Button, FormInput } from '../components';
+import { Button, FormInput } from '../components';
 import { authRenderer } from '../middleware/renderer';
 
 const auth = new Hono();
@@ -11,16 +11,18 @@ auth.use(authRenderer);
 
 /**
  * Get CSRF token for forms.
- * Throws in development to remind developers to implement CSRF protection.
+ * Requires explicit opt-in to skip CSRF protection during development.
  * In production, this would use hono/csrf middleware with session-based tokens.
  */
 function getCsrfToken(): string {
   // TODO: Implement with hono/csrf middleware and session storage
   // Example: return c.get('csrfToken') from session
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('CSRF protection must be implemented before production deployment');
+  if (process.env.ALLOW_INSECURE_FORMS !== 'true') {
+    throw new Error(
+      'CSRF protection not implemented. Set ALLOW_INSECURE_FORMS=true for local development only.',
+    );
   }
-  // Return empty string in development - forms will work but without CSRF protection
+  // Return empty string when explicitly opted in - forms work without CSRF protection
   return '';
 }
 
@@ -107,27 +109,47 @@ auth.post('/logout', (c) => {
 
 auth.post('/login', (c) => {
   // TODO: Implement authentication
-  return c.render(
-    <>
-      <Alert variant="warning">Login functionality is not yet implemented.</Alert>
-      <p>
-        <a href="/auth/login">← Back to login</a>
-      </p>
-    </>,
-    { title: 'Sign In' },
+  return c.html(
+    `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not Implemented</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="container" style="text-align: center; padding-top: 4rem;">
+    <h1>501</h1>
+    <p>Login functionality is not yet implemented.</p>
+    <p><a href="/auth/login">← Back to login</a></p>
+  </main>
+</body>
+</html>`,
+    501,
   );
 });
 
 auth.post('/register', (c) => {
   // TODO: Implement registration
-  return c.render(
-    <>
-      <Alert variant="warning">Registration functionality is not yet implemented.</Alert>
-      <p>
-        <a href="/auth/register">← Back to registration</a>
-      </p>
-    </>,
-    { title: 'Sign Up' },
+  return c.html(
+    `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not Implemented</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="container" style="text-align: center; padding-top: 4rem;">
+    <h1>501</h1>
+    <p>Registration functionality is not yet implemented.</p>
+    <p><a href="/auth/register">← Back to registration</a></p>
+  </main>
+</body>
+</html>`,
+    501,
   );
 });
 

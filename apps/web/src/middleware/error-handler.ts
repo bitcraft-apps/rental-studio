@@ -2,11 +2,32 @@ import type { Context, Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
 /**
- * Check if the request accepts HTML responses
+ * Check if the request prefers HTML responses over JSON.
+ * Handles quality values in Accept header for proper content negotiation.
  */
 function acceptsHtml(c: Context): boolean {
   const accept = c.req.header('Accept') || '';
-  return accept.includes('text/html');
+
+  // No accept header or wildcard - default to HTML for browser-like behavior
+  if (!accept || accept === '*/*') {
+    return true;
+  }
+
+  // If JSON is explicitly requested without HTML, prefer JSON
+  if (accept.includes('application/json') && !accept.includes('text/html')) {
+    return false;
+  }
+
+  // If HTML appears before JSON in the header, prefer HTML
+  const htmlIndex = accept.indexOf('text/html');
+  const jsonIndex = accept.indexOf('application/json');
+
+  if (htmlIndex !== -1 && (jsonIndex === -1 || htmlIndex < jsonIndex)) {
+    return true;
+  }
+
+  // Default to JSON for API-like requests
+  return jsonIndex === -1;
 }
 
 /**

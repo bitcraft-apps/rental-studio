@@ -16,7 +16,7 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, children }) => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{pageTitle}</title>
         <link rel="stylesheet" href="/static/styles.css" />
-        <script src="/static/htmx.min.js" />
+        <script defer src="/static/htmx.min.js" />
       </head>
       <body hx-boost="true">{children}</body>
     </html>

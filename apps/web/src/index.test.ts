@@ -1,3 +1,7 @@
+// Enable insecure forms for testing (CSRF not yet implemented)
+// Must be set before importing app module
+process.env.ALLOW_INSECURE_FORMS = 'true';
+
 import { describe, expect, it } from 'bun:test';
 import { Hono } from 'hono';
 import app from './index';
@@ -101,7 +105,9 @@ describe('Web App', () => {
 
   describe('Error handling', () => {
     it('should return 404 for unknown routes', async () => {
-      const res = await app.request('/nonexistent-route');
+      const res = await app.request('/nonexistent-route', {
+        headers: { Accept: 'application/json' },
+      });
       const body = (await res.json()) as ErrorResponse;
 
       expect(res.status).toBe(404);
@@ -110,7 +116,9 @@ describe('Web App', () => {
     });
 
     it('should return 404 JSON for unknown API routes', async () => {
-      const res = await app.request('/api/unknown');
+      const res = await app.request('/api/unknown', {
+        headers: { Accept: 'application/json' },
+      });
       const body = (await res.json()) as ErrorResponse;
 
       expect(res.status).toBe(404);
@@ -119,12 +127,23 @@ describe('Web App', () => {
 
     it('should handle thrown errors gracefully', async () => {
       const testApp = createTestApp();
-      const res = await testApp.request('/test-error');
+      const res = await testApp.request('/test-error', {
+        headers: { Accept: 'application/json' },
+      });
       const body = (await res.json()) as ErrorResponse;
 
       expect(res.status).toBe(500);
       // Note: Actual error message is only exposed when NODE_ENV !== 'production'
       expect(body.error).toBe('Test error');
+    });
+
+    it('should return 404 HTML for browser requests', async () => {
+      const res = await app.request('/nonexistent-route', {
+        headers: { Accept: 'text/html' },
+      });
+
+      expect(res.status).toBe(404);
+      expect(await res.text()).toContain('Not Found');
     });
   });
 });
