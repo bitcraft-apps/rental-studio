@@ -69,23 +69,23 @@ describe('Web App', () => {
       const res = await app.request('/auth/login');
 
       expect(res.status).toBe(200);
-      expect(await res.text()).toContain('Login');
+      expect(await res.text()).toContain('Sign In');
     });
 
-    it('POST /auth/logout should return logout', async () => {
+    it('POST /auth/logout should redirect to home', async () => {
       const res = await app.request('/auth/logout', { method: 'POST' });
 
-      expect(res.status).toBe(200);
-      expect(await res.text()).toContain('Logout');
+      expect(res.status).toBe(302);
+      expect(res.headers.get('location')).toBe('/');
     });
   });
 
   describe('App routes (/app/*)', () => {
-    it('GET /app should return main application', async () => {
+    it('GET /app should return dashboard', async () => {
       const res = await app.request('/app');
 
       expect(res.status).toBe(200);
-      expect(await res.text()).toContain('Main application');
+      expect(await res.text()).toContain('Dashboard');
     });
   });
 
