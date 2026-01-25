@@ -1,6 +1,6 @@
 import type { FC } from 'hono/jsx';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'contrast' | 'outline';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 
 export interface ButtonProps {
   type?: 'button' | 'submit' | 'reset';
@@ -8,7 +8,15 @@ export interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   children: unknown;
-  [key: string]: unknown;
+  // Explicit HTMX attributes for type safety
+  'hx-get'?: string;
+  'hx-post'?: string;
+  'hx-put'?: string;
+  'hx-delete'?: string;
+  'hx-target'?: string;
+  'hx-swap'?: string;
+  'hx-trigger'?: string;
+  'hx-indicator'?: string;
 }
 
 export const Button: FC<ButtonProps> = ({
@@ -17,20 +25,19 @@ export const Button: FC<ButtonProps> = ({
   disabled = false,
   loading = false,
   children,
-  ...rest
+  ...htmxProps
 }) => {
-  const classNames: string[] = [];
-  if (variant === 'secondary') classNames.push('secondary');
-  if (variant === 'contrast') classNames.push('contrast');
-  if (variant === 'outline') classNames.push('outline');
+  // Base button styling comes from @layer base in main.css
+  // Only add variant class when not primary (primary is the default)
+  const variantClass = variant !== 'primary' ? variant : undefined;
 
   return (
     <button
       type={type}
-      class={classNames.join(' ') || undefined}
+      class={variantClass}
       disabled={disabled || loading}
-      aria-busy={loading}
-      {...rest}
+      aria-busy={loading || undefined}
+      {...htmxProps}
     >
       {children}
     </button>

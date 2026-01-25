@@ -15,24 +15,14 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, children }) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{pageTitle}</title>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        {/* Self-hosted Tailwind CSS */}
+        <link rel="stylesheet" href="/static/styles.css" />
+        {/* HTMX with Subresource Integrity */}
+        <script
+          src="https://unpkg.com/htmx.org@2.0.4"
+          integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+          crossorigin="anonymous"
         />
-        <script src="https://unpkg.com/htmx.org@2.0.4" />
-        <style>
-          {`
-            .htmx-indicator {
-              display: none;
-            }
-            .htmx-request .htmx-indicator {
-              display: inline-block;
-            }
-            .htmx-request.htmx-indicator {
-              display: inline-block;
-            }
-          `}
-        </style>
       </head>
       <body hx-boost="true">{children}</body>
     </html>

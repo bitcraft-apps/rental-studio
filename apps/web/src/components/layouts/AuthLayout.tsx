@@ -8,7 +8,7 @@ export interface AuthLayoutProps {
 export const AuthLayout: FC<AuthLayoutProps> = ({ children }) => {
   return (
     <main class="container">
-      <article style={{ maxWidth: '400px', margin: '4rem auto' }}>
+      <article class="max-w-md mx-auto mt-16">
         <header>
           <hgroup>
             <h1>{APP_NAME}</h1>

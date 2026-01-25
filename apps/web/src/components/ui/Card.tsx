@@ -6,12 +6,14 @@ export interface CardProps {
   children: unknown;
 }
 
-export const Card: FC<CardProps> = ({ header, footer, children }) => {
-  return (
-    <article>
-      {header && <header>{header}</header>}
-      {children}
-      {footer && <footer>{footer}</footer>}
-    </article>
-  );
-};
+/**
+ * Card component using semantic <article> element.
+ * Base styling provided by @layer base in main.css.
+ */
+export const Card: FC<CardProps> = ({ header, footer, children }) => (
+  <article>
+    {header && <header>{header}</header>}
+    {children}
+    {footer && <footer>{footer}</footer>}
+  </article>
+);

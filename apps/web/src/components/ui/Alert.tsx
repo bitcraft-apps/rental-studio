@@ -4,40 +4,18 @@ export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
 
 export interface AlertProps {
   variant?: AlertVariant;
-  dismissible?: boolean;
   children: unknown;
 }
 
 const variantStyles: Record<AlertVariant, string> = {
-  info: 'var(--pico-primary)',
-  success: 'var(--pico-ins-color)',
-  warning: 'var(--pico-mark-background-color)',
-  error: 'var(--pico-del-color)',
+  info: 'border-l-primary bg-primary/5',
+  success: 'border-l-success bg-success/5',
+  warning: 'border-l-warning bg-warning/5',
+  error: 'border-l-danger bg-danger/5',
 };
 
-export const Alert: FC<AlertProps> = ({ variant = 'info', dismissible = false, children }) => {
-  return (
-    <aside
-      role="alert"
-      style={{
-        padding: 'var(--pico-spacing)',
-        marginBottom: 'var(--pico-spacing)',
-        borderLeft: `4px solid ${variantStyles[variant]}`,
-        backgroundColor: 'var(--pico-card-background-color)',
-        borderRadius: 'var(--pico-border-radius)',
-      }}
-    >
-      {dismissible && (
-        <button
-          type="button"
-          class="close"
-          aria-label="Close"
-          style={{ float: 'right', background: 'none', border: 'none' }}
-        >
-          ×
-        </button>
-      )}
-      {children}
-    </aside>
-  );
-};
+export const Alert: FC<AlertProps> = ({ variant = 'info', children }) => (
+  <aside role="alert" class={`p-4 mb-4 border-l-4 rounded-md ${variantStyles[variant]}`}>
+    {children}
+  </aside>
+);

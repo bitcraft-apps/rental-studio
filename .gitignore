@@ -4,6 +4,7 @@ node_modules/
 # Build outputs
 dist/
 *.tsbuildinfo
+apps/web/public/styles.css
 
 # Environment variables
 .env

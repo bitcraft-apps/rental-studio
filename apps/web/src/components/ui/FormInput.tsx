@@ -8,7 +8,12 @@ export interface FormInputProps {
   required?: boolean;
   error?: string;
   value?: string;
-  [key: string]: unknown;
+  // Explicit HTMX attributes for type safety
+  'hx-get'?: string;
+  'hx-post'?: string;
+  'hx-target'?: string;
+  'hx-swap'?: string;
+  'hx-trigger'?: string;
 }
 
 export const FormInput: FC<FormInputProps> = ({
@@ -19,27 +24,28 @@ export const FormInput: FC<FormInputProps> = ({
   required = false,
   error,
   value,
-  ...rest
-}) => {
-  return (
-    <label>
+  ...htmxProps
+}) => (
+  <div class="mb-4">
+    <label for={name}>
       {label}
-      {required && <span aria-hidden="true"> *</span>}
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        required={required}
-        value={value}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${name}-error` : undefined}
-        {...rest}
-      />
-      {error && (
-        <small id={`${name}-error`} style={{ color: 'var(--pico-del-color)' }}>
-          {error}
-        </small>
-      )}
+      {required && <span class="text-danger"> *</span>}
     </label>
-  );
-};
+    <input
+      type={type}
+      id={name}
+      name={name}
+      placeholder={placeholder}
+      required={required}
+      value={value}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? `${name}-error` : undefined}
+      {...htmxProps}
+    />
+    {error && (
+      <small id={`${name}-error`} class="text-danger">
+        {error}
+      </small>
+    )}
+  </div>
+);
