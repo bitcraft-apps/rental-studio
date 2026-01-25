@@ -11,7 +11,7 @@ appRouter.get('/', (c) => {
   return c.render(
     <>
       <h1>Dashboard</h1>
-      <div class="grid">
+      <div class="app-grid">
         <Card header={<strong>Properties</strong>}>
           <p>Manage your rental properties</p>
           <a href="/app/properties">View Properties →</a>

@@ -31,7 +31,15 @@ export const FormInput: FC<FormInputProps> = ({
   <div class="mb-4">
     <label for={name}>
       {label}
-      {required && <span class="text-danger"> *</span>}
+      {required && (
+        <>
+          <span class="text-danger" aria-hidden="true">
+            {' '}
+            *
+          </span>
+          <span class="sr-only"> (required)</span>
+        </>
+      )}
     </label>
     <input
       type={type}

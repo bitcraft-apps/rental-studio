@@ -63,10 +63,8 @@
     @apply font-semibold;
   }
 
-  /* Buttons */
-  button,
-  button[type="submit"],
-  button[type="button"] {
+  /* Buttons - base styling for all button elements */
+  button {
     @apply px-4 py-2 bg-primary text-white font-medium rounded-md
            hover:opacity-90 transition-opacity cursor-pointer
            disabled:opacity-50 disabled:cursor-not-allowed;
@@ -153,24 +151,37 @@
    ============================================================================= */
 
 @layer utilities {
-  /* Container utility */
-  .container {
+  /* Screen reader only - visually hidden but accessible to assistive technology */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* App container utility - use instead of Tailwind's built-in container */
+  .app-container {
     @apply max-w-5xl mx-auto px-4;
   }
 
   /* Responsive grid utility */
-  .grid {
+  .app-grid {
     @apply grid gap-6;
   }
 
   @media (min-width: 768px) {
-    .grid {
+    .app-grid {
       @apply grid-cols-2;
     }
   }
 
   @media (min-width: 1024px) {
-    .grid {
+    .app-grid {
       @apply grid-cols-3;
     }
   }

@@ -34,9 +34,9 @@ export const Button: FC<ButtonProps> = ({
   return (
     <button
       type={type}
-      class={variantClass}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      {...(variantClass && { class: variantClass })}
       {...htmxProps}
     >
       {children}

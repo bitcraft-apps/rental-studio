@@ -5,11 +5,14 @@ export interface AppLayoutProps {
   children: Child;
 }
 
+// Calculated at module load time to avoid creating Date objects on every request
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   return (
     <>
       <header>
-        <nav class="container py-4">
+        <nav class="app-container py-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-6">
               <strong class="text-lg">{APP_NAME}</strong>
@@ -33,10 +36,10 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
           </div>
         </nav>
       </header>
-      <main class="container py-8">{children}</main>
-      <footer class="container">
+      <main class="app-container py-8">{children}</main>
+      <footer class="app-container">
         <small>
-          © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+          © {CURRENT_YEAR} {APP_NAME}. All rights reserved.
         </small>
       </footer>
     </>

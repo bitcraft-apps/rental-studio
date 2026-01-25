@@ -1,9 +1,10 @@
 import type { Context, Hono } from 'hono';
+import { accepts } from 'hono/accepts';
 import { HTTPException } from 'hono/http-exception';
 
 /**
  * Check if the request prefers HTML responses over JSON.
- * Handles quality values in Accept header for proper content negotiation.
+ * Uses Hono's accepts helper for proper content negotiation with quality values.
  */
 function acceptsHtml(c: Context): boolean {
   const accept = c.req.header('Accept') || '';
@@ -13,21 +14,13 @@ function acceptsHtml(c: Context): boolean {
     return true;
   }
 
-  // If JSON is explicitly requested without HTML, prefer JSON
-  if (accept.includes('application/json') && !accept.includes('text/html')) {
-    return false;
-  }
+  const accepted = accepts(c, {
+    header: 'Accept',
+    supports: ['text/html', 'application/json'],
+    default: 'text/html',
+  });
 
-  // If HTML appears before JSON in the header, prefer HTML
-  const htmlIndex = accept.indexOf('text/html');
-  const jsonIndex = accept.indexOf('application/json');
-
-  if (htmlIndex !== -1 && (jsonIndex === -1 || htmlIndex < jsonIndex)) {
-    return true;
-  }
-
-  // Default to JSON for API-like requests
-  return jsonIndex === -1;
+  return accepted === 'text/html';
 }
 
 /**
@@ -43,9 +36,10 @@ function escapeHtml(str: string): string {
 }
 
 /**
- * Render a simple error page with consistent styling
+ * Render a simple error page with consistent styling.
+ * Exported for reuse in route handlers that need to return error pages.
  */
-function renderErrorPage(status: number, title: string, message: string): string {
+export function renderErrorPage(status: number, title: string, message: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,7 +49,7 @@ function renderErrorPage(status: number, title: string, message: string): string
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <main class="container" style="text-align: center; padding-top: 4rem;">
+  <main class="app-container" style="text-align: center; padding-top: 4rem;">
     <h1>${status}</h1>
     <p>${escapeHtml(message)}</p>
     <p><a href="/">← Back to Home</a></p>

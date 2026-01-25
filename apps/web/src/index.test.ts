@@ -1,7 +1,3 @@
-// Enable insecure forms for testing (CSRF not yet implemented)
-// Must be set before importing app module
-process.env.ALLOW_INSECURE_FORMS = 'true';
-
 import { describe, expect, it } from 'bun:test';
 import { Hono } from 'hono';
 import app from './index';
@@ -77,7 +73,10 @@ describe('Web App', () => {
     });
 
     it('POST /auth/logout should redirect to home', async () => {
-      const res = await app.request('/auth/logout', { method: 'POST' });
+      const res = await app.request('/auth/logout', {
+        method: 'POST',
+        headers: { Origin: 'http://localhost' },
+      });
 
       expect(res.status).toBe(302);
       expect(res.headers.get('location')).toBe('/');

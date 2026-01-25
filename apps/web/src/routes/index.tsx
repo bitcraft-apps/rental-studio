@@ -8,7 +8,7 @@ index.use(baseRenderer);
 
 index.get('/', (c) => {
   return c.render(
-    <main class="container">
+    <main class="app-container">
       <hgroup>
         <h1>Welcome to {APP_NAME}</h1>
         <p>Your rental management platform</p>

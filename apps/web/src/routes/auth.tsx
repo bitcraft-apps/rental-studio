@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
+import { csrf } from 'hono/csrf';
 import { Button, FormInput } from '../components';
+import { renderErrorPage } from '../middleware/error-handler';
 import { authRenderer } from '../middleware/renderer';
 
 const auth = new Hono();
@@ -7,32 +9,13 @@ const auth = new Hono();
 // TODO: Add rate limiting middleware before implementing real auth
 // to prevent brute-force attacks on login
 
+// CSRF protection - validates Origin header for form submissions
+auth.use(csrf());
 auth.use(authRenderer);
 
-/**
- * Get CSRF token for forms.
- * Requires explicit opt-in to skip CSRF protection during development.
- * In production, this would use hono/csrf middleware with session-based tokens.
- */
-function getCsrfToken(): string {
-  // TODO: Implement with hono/csrf middleware and session storage
-  // Example: return c.get('csrfToken') from session
-  if (process.env.ALLOW_INSECURE_FORMS !== 'true') {
-    throw new Error(
-      'CSRF protection not implemented. Set ALLOW_INSECURE_FORMS=true for local development only.',
-    );
-  }
-  // Return empty string when explicitly opted in - forms work without CSRF protection
-  return '';
-}
-
 auth.get('/login', (c) => {
-  const csrfToken = getCsrfToken();
-
   return c.render(
     <form method="post" action="/auth/login">
-      {/* CSRF protection - implement with hono/csrf middleware */}
-      {csrfToken && <input type="hidden" name="_csrf" value={csrfToken} />}
       <FormInput
         name="email"
         label="Email"
@@ -61,12 +44,8 @@ auth.get('/login', (c) => {
 });
 
 auth.get('/register', (c) => {
-  const csrfToken = getCsrfToken();
-
   return c.render(
     <form method="post" action="/auth/register">
-      {/* CSRF protection - implement with hono/csrf middleware */}
-      {csrfToken && <input type="hidden" name="_csrf" value={csrfToken} />}
       <FormInput
         name="name"
         label="Full Name"
@@ -110,22 +89,7 @@ auth.post('/logout', (c) => {
 auth.post('/login', (c) => {
   // TODO: Implement authentication
   return c.html(
-    `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Not Implemented</title>
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-  <main class="container" style="text-align: center; padding-top: 4rem;">
-    <h1>501</h1>
-    <p>Login functionality is not yet implemented.</p>
-    <p><a href="/auth/login">← Back to login</a></p>
-  </main>
-</body>
-</html>`,
+    renderErrorPage(501, 'Not Implemented', 'Login functionality is not yet implemented.'),
     501,
   );
 });
@@ -133,22 +97,7 @@ auth.post('/login', (c) => {
 auth.post('/register', (c) => {
   // TODO: Implement registration
   return c.html(
-    `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Not Implemented</title>
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-  <main class="container" style="text-align: center; padding-top: 4rem;">
-    <h1>501</h1>
-    <p>Registration functionality is not yet implemented.</p>
-    <p><a href="/auth/register">← Back to registration</a></p>
-  </main>
-</body>
-</html>`,
+    renderErrorPage(501, 'Not Implemented', 'Registration functionality is not yet implemented.'),
     501,
   );
 });
