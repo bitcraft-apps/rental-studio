@@ -45,7 +45,7 @@ export function renderErrorPage(status: number, title: string, message: string):
     throw new Error(`Invalid HTTP status code: ${status}`);
   }
 
-  return `<!DOCTYPE html>>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">

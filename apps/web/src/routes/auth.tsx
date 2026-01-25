@@ -11,14 +11,15 @@ const auth = new Hono();
 // TODO: Add rate limiting middleware before implementing real auth
 // to prevent brute-force attacks on login
 
+// Create CSRF middleware instance once at module load time
+const csrfMiddleware = csrf();
+
 /**
  * Custom CSRF middleware that wraps Hono's csrf() with a user-friendly error page.
  * The default CSRF middleware throws an HTTPException; this catches it and provides
  * a styled error page for a consistent user experience.
  */
 const csrfWithErrorPage = async (c: Context, next: Next) => {
-  const csrfMiddleware = csrf();
-
   try {
     return await csrfMiddleware(c, next);
   } catch (err) {

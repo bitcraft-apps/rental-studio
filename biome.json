@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.json", "!drizzle"]
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.json", "!drizzle", "!**/public"]
   },
   "assist": {
     "actions": {

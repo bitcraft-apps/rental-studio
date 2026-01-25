@@ -42,4 +42,38 @@ appRouter.get('/', (c) => {
   );
 });
 
+// Placeholder routes for dashboard links
+appRouter.get('/properties', (c) => {
+  return c.render(
+    <>
+      <h1>Properties</h1>
+      <p>Property management coming soon.</p>
+      <a href="/app">← Back to Dashboard</a>
+    </>,
+    { title: 'Properties' },
+  );
+});
+
+appRouter.get('/tenants', (c) => {
+  return c.render(
+    <>
+      <h1>Tenants</h1>
+      <p>Tenant management coming soon.</p>
+      <a href="/app">← Back to Dashboard</a>
+    </>,
+    { title: 'Tenants' },
+  );
+});
+
+appRouter.get('/payments', (c) => {
+  return c.render(
+    <>
+      <h1>Payments</h1>
+      <p>Payment tracking coming soon.</p>
+      <a href="/app">← Back to Dashboard</a>
+    </>,
+    { title: 'Payments' },
+  );
+});
+
 export default appRouter;
