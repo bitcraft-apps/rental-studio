@@ -19,12 +19,17 @@ export function createDb(connectionString: string) {
 export type DatabaseClient = ReturnType<typeof createDb>;
 export type Database = DatabaseClient['db'];
 
-/** Health check for readiness probes */
+/**
+ * Health check for readiness probes.
+ * Returns true if the database is reachable, false otherwise.
+ * Errors are logged to console for debugging but not thrown.
+ */
 export async function checkConnection(db: Database): Promise<boolean> {
   try {
     await db.execute(sql`SELECT 1`);
     return true;
-  } catch {
+  } catch (error) {
+    console.error('[database] Health check failed:', error);
     return false;
   }
 }

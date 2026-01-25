@@ -1,5 +1,11 @@
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
+/**
+ * Tenants table - represents organizations/landlords in the multi-tenant system.
+ *
+ * NOTE: `updated_at` is set to `now()` on INSERT only. Updates must explicitly
+ * set `updatedAt: new Date()` in the query to keep this field current.
+ */
 export const tenants = pgTable('tenants', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
