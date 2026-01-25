@@ -52,7 +52,7 @@
   }
 
   a {
-    @apply text-primary underline-offset-2 hover:underline;
+    @apply text-primary underline-offset-2 hover:underline focus:outline-2 focus:outline-primary focus:outline-offset-2;
   }
 
   small {
@@ -67,6 +67,7 @@
   button {
     @apply px-4 py-2 bg-primary text-white font-medium rounded-md
            hover:opacity-90 transition-opacity cursor-pointer
+           focus:outline-2 focus:outline-primary focus:outline-offset-2
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
@@ -124,7 +125,7 @@
   }
 
   nav a {
-    @apply text-gray-600 no-underline hover:text-gray-900;
+    @apply text-gray-600 no-underline hover:text-gray-900 focus:outline-2 focus:outline-primary focus:outline-offset-2;
   }
 
   /* Footer */

@@ -3,6 +3,30 @@ import { accepts } from 'hono/accepts';
 import { HTTPException } from 'hono/http-exception';
 
 /**
+ * Generate a request ID for log correlation.
+ * Uses incoming x-request-id header if present, otherwise generates a new one.
+ */
+function getRequestId(c: Context): string {
+  return c.req.header('x-request-id') || crypto.randomUUID();
+}
+
+/**
+ * Log an error with structured context for debugging and monitoring.
+ */
+function logError(c: Context, err: Error, requestId: string): void {
+  // TODO: Replace with structured logger (e.g., pino) for production
+  const logEntry = {
+    level: 'error',
+    requestId,
+    method: c.req.method,
+    path: c.req.path,
+    error: err.message,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+  };
+  console.error(JSON.stringify(logEntry));
+}
+
+/**
  * Check if the request prefers HTML responses over JSON.
  * Uses Hono's accepts helper for proper content negotiation with quality values.
  */
@@ -52,9 +76,16 @@ export function renderErrorPage(status: number, title: string, message: string):
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${status} - ${escapeHtml(title)}</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    /* Critical inline styles in case CSS fails to load */
+    .error-page { max-width: 40rem; margin: 4rem auto; text-align: center; padding: 0 1rem; font-family: system-ui, sans-serif; }
+    .error-page h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+    .error-page p { margin-bottom: 1rem; color: #666; }
+    .error-page a { color: #0066cc; }
+  </style>
 </head>
 <body>
-  <main class="app-container" style="text-align: center; padding-top: 4rem;">
+  <main class="app-container error-page" style="text-align: center; padding-top: 4rem;">
     <h1>${status}</h1>
     <p>${escapeHtml(message)}</p>
     <p><a href="/">← Back to Home</a></p>
@@ -72,8 +103,8 @@ export function renderErrorPage(status: number, title: string, message: string):
  */
 export function setupErrorHandling(app: Hono) {
   app.onError((err, c) => {
-    // TODO: Replace with structured logger (e.g., pino) that includes request context
-    console.error(`[ERROR] [${c.req.method} ${c.req.path}] ${err.message}`, err.stack);
+    const requestId = getRequestId(c);
+    logError(c, err, requestId);
 
     // HTTPException messages are assumed to be client-safe (e.g., "Unauthorized", "Bad Request")
     // Do not throw HTTPException with sensitive internal details
@@ -81,7 +112,7 @@ export function setupErrorHandling(app: Hono) {
       if (acceptsHtml(c)) {
         return c.html(renderErrorPage(err.status, 'Error', err.message), err.status);
       }
-      return c.json({ error: err.message }, err.status);
+      return c.json({ error: err.message, requestId }, err.status);
     }
 
     // In production, don't leak error details
@@ -90,7 +121,7 @@ export function setupErrorHandling(app: Hono) {
     if (acceptsHtml(c)) {
       return c.html(renderErrorPage(500, 'Error', message), 500);
     }
-    return c.json({ error: message }, 500);
+    return c.json({ error: message, requestId }, 500);
   });
 
   app.notFound((c) => {
