@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "concurrently \"bun run dev:server\" \"bun run dev:css\"",
     "dev:server": "bun run --hot src/index.ts",
-    "dev:css": "bunx @tailwindcss/cli -i ./src/styles/main.css -o ./public/styles.css --watch",
-    "build:css": "bunx @tailwindcss/cli -i ./src/styles/main.css -o ./public/styles.css --minify",
-    "build:assets": "cp node_modules/htmx.org/dist/htmx.min.js public/htmx.min.js",
+    "dev:css": "bunx @tailwindcss/cli -i ./src/styles/main.css -o ./public/dist/styles.css --watch",
+    "build:css": "bunx @tailwindcss/cli -i ./src/styles/main.css -o ./public/dist/styles.css --minify",
+    "build:assets": "mkdir -p public/dist && cp node_modules/htmx.org/dist/htmx.min.js public/dist/htmx.min.js",
     "build": "bun run build:css && bun run build:assets && bun run scripts/build.ts",
     "postinstall": "bun run build:assets",
     "start": "bun run dist/index.js",

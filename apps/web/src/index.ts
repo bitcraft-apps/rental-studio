@@ -23,7 +23,7 @@ const STATIC_PREFIX = '/static';
 app.use(
   `${STATIC_PREFIX}/*`,
   serveStatic({
-    root: join(import.meta.dir, '../public'),
+    root: join(import.meta.dir, '../public/dist'),
     rewriteRequestPath: (path) => path.slice(STATIC_PREFIX.length),
   }),
 );

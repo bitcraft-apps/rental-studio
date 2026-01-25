@@ -4,8 +4,7 @@ node_modules/
 # Build outputs
 dist/
 *.tsbuildinfo
-apps/web/public/styles.css
-apps/web/public/htmx.min.js
+apps/web/public/dist/
 
 # Environment variables
 .env
