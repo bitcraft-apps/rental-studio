@@ -90,6 +90,7 @@ describe('Web App', () => {
       });
 
       expect(res.status).toBe(403);
+      expect(await res.text()).toContain('session may have expired');
     });
   });
 

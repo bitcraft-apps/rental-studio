@@ -4,7 +4,19 @@ import { appRenderer } from '../middleware/renderer';
 
 const appRouter = new Hono();
 
-// TODO: Add auth middleware when authentication is implemented
+// Placeholder auth middleware - redirects to login until real auth is implemented
+// TODO: Replace with actual session/JWT validation
+appRouter.use(async (c, next) => {
+  // When auth is implemented, check session/token here
+  // For now, allow access but log warning in development
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      `[AUTH] Unprotected access to ${c.req.path} - auth middleware not yet implemented`,
+    );
+  }
+  await next();
+});
+
 appRouter.use(appRenderer);
 
 appRouter.get('/', (c) => {

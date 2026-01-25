@@ -1,5 +1,7 @@
+import type { Context, Next } from 'hono';
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
+import { HTTPException } from 'hono/http-exception';
 import { Button, FormInput } from '../components';
 import { renderErrorPage } from '../middleware/error-handler';
 import { authRenderer } from '../middleware/renderer';
@@ -9,8 +11,34 @@ const auth = new Hono();
 // TODO: Add rate limiting middleware before implementing real auth
 // to prevent brute-force attacks on login
 
-// CSRF protection - validates Origin header for form submissions
-auth.use(csrf());
+/**
+ * Custom CSRF middleware that wraps Hono's csrf() with a user-friendly error page.
+ * The default CSRF middleware throws an HTTPException; this catches it and provides
+ * a styled error page for a consistent user experience.
+ */
+const csrfWithErrorPage = async (c: Context, next: Next) => {
+  const csrfMiddleware = csrf();
+
+  try {
+    return await csrfMiddleware(c, next);
+  } catch (err) {
+    // CSRF middleware throws HTTPException with status 403 on validation failure
+    if (err instanceof HTTPException && err.status === 403) {
+      return c.html(
+        renderErrorPage(
+          403,
+          'Invalid Request',
+          'Your session may have expired. Please refresh the page and try again.',
+        ),
+        403,
+      );
+    }
+    // Re-throw other errors to be handled by global error handler
+    throw err;
+  }
+};
+
+auth.use(csrfWithErrorPage);
 auth.use(authRenderer);
 
 auth.get('/login', (c) => {

@@ -1,6 +1,9 @@
 import { APP_NAME } from '@rental-studio/core';
 import type { Child, FC } from 'hono/jsx';
 
+// Computed once at module load time for consistency and cacheability
+const COPYRIGHT_YEAR = new Date().getFullYear();
+
 export interface AppLayoutProps {
   children: Child;
 }
@@ -36,7 +39,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
       <main class="app-container py-8">{children}</main>
       <footer class="app-container">
         <small>
-          © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+          © {COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
         </small>
       </footer>
     </>

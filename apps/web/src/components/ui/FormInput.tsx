@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx';
+import type { HtmxAttributes } from '../../types/htmx';
 
-export interface FormInputProps {
+export interface FormInputProps extends HtmxAttributes {
   name: string;
   label: string;
   type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'date';
@@ -9,12 +10,6 @@ export interface FormInputProps {
   error?: string;
   value?: string;
   autocomplete?: string;
-  // Explicit HTMX attributes for type safety
-  'hx-get'?: string;
-  'hx-post'?: string;
-  'hx-target'?: string;
-  'hx-swap'?: string;
-  'hx-trigger'?: string;
 }
 
 export const FormInput: FC<FormInputProps> = ({

@@ -40,7 +40,12 @@ function escapeHtml(str: string): string {
  * Exported for reuse in route handlers that need to return error pages.
  */
 export function renderErrorPage(status: number, title: string, message: string): string {
-  return `<!DOCTYPE html>
+  // Validate status is a safe integer to prevent injection
+  if (!Number.isInteger(status) || status < 100 || status > 599) {
+    throw new Error(`Invalid HTTP status code: ${status}`);
+  }
+
+  return `<!DOCTYPE html>>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
