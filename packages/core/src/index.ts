@@ -14,17 +14,5 @@ export const APP_NAME = 'Rental Studio';
 export const APP_VERSION: string =
   typeof APP_VERSION_DEFINE !== 'undefined' ? APP_VERSION_DEFINE : '0.0.1-dev';
 
-// Types (to be expanded)
-export interface User {
-  id: string;
-  email: string;
-  name: string | null;
-  createdAt: Date;
-}
-
-export interface Tenant {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: Date;
-}
+// Domain types are now defined in @rental-studio/database schema
+// Import from there for type-safe database operations

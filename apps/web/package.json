@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@rental-studio/core": "workspace:*",
+    "@rental-studio/database": "workspace:*",
     "hono": "^4.7.0"
   },
   "devDependencies": {
