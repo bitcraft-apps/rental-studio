@@ -3,16 +3,31 @@ import type { Context, Next } from 'hono';
 /**
  * Placeholder auth middleware - blocks access until real auth is implemented.
  *
- * Security behavior:
- * - Production: Redirects to login (fail-secure)
- * - Development: Allows access with console warning (for testing UI)
+ * Security behavior (fail-secure by default):
+ * - Always redirects to login unless explicitly bypassed
+ * - Set BYPASS_AUTH=true in development to test UI without auth
  *
  * TODO: Replace with actual session/JWT validation when auth is implemented.
  */
 export const requireAuth = async (c: Context, next: Next) => {
   // When auth is implemented, check session/token here
-  // Fail secure: block access in production, allow in development for testing
-  if (process.env.NODE_ENV === 'production') {
+  const isAuthenticated = false; // TODO: check session/token
+
+  if (!isAuthenticated) {
+    // Require explicit opt-in to bypass auth (fail-secure by default)
+    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    const bypassAuth = process.env.BYPASS_AUTH === 'true';
+
+    if (isDevelopment && bypassAuth) {
+      // Only log once per request path to reduce noise
+      if (!c.get('authWarningLogged')) {
+        console.warn(`[AUTH] Bypassing auth for ${c.req.path} (BYPASS_AUTH=true)`);
+        c.set('authWarningLogged', true);
+      }
+      await next();
+      return;
+    }
+
     // Log for security auditing - helps detect probing attempts
     console.info(
       JSON.stringify({
@@ -24,14 +39,6 @@ export const requireAuth = async (c: Context, next: Next) => {
       }),
     );
     return c.redirect('/auth/login');
-  }
-
-  // Only log once per request path to reduce noise
-  if (!c.get('authWarningLogged')) {
-    console.warn(
-      `[AUTH] Unprotected access to ${c.req.path} - auth middleware not yet implemented`,
-    );
-    c.set('authWarningLogged', true);
   }
 
   await next();

@@ -6,6 +6,7 @@ import { logger } from 'hono/logger';
 
 import { csrfProtection } from './middleware/csrf';
 import { setupErrorHandling } from './middleware/error-handler';
+import { requestId } from './middleware/request-id';
 import api from './routes/api';
 import appRouter from './routes/app';
 import auth from './routes/auth';
@@ -18,6 +19,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(logger());
 }
 
+// Request ID for tracing and log correlation (must be before other middleware)
+app.use(requestId);
+
 // CSRF protection for state-changing requests (POST, PUT, DELETE, PATCH).
 // Hono's csrf() middleware only validates Origin on non-safe methods;
 // safe methods (GET, HEAD, OPTIONS) pass through unvalidated.
@@ -26,8 +30,6 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/auth/*', csrfProtection);
 app.use('/app/*', csrfProtection);
 app.use('/api/*', csrfProtection);
-
-// TODO: Add request ID middleware for request tracing and log correlation
 
 const STATIC_PREFIX = '/static';
 app.use(

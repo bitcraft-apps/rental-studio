@@ -1,3 +1,6 @@
+// Enable auth bypass for testing protected routes
+process.env.BYPASS_AUTH = 'true';
+
 import { describe, expect, it } from 'bun:test';
 import { APP_NAME } from '@rental-studio/core';
 import { Hono } from 'hono';
@@ -119,8 +122,8 @@ describe('Web App', () => {
       expect(await res.text()).toContain('Dashboard');
     });
 
-    it('POST to /app routes should reject requests without valid Origin (CSRF)', async () => {
-      // Test CSRF on logout form which is part of AppLayout
+    it('POST to /auth routes should reject requests without valid Origin (CSRF)', async () => {
+      // Test CSRF on logout form
       const res = await app.request('/auth/logout', {
         method: 'POST',
         headers: { Referer: 'http://localhost:3000/app' },
@@ -215,6 +218,41 @@ describe('Web App', () => {
       expect(html).toContain('<h1>404</h1>');
       expect(html).toContain('Page not found');
       expect(html).toContain('href="/"');
+    });
+  });
+
+  describe('Request ID middleware', () => {
+    it('should generate X-Request-ID header for all responses', async () => {
+      const res = await app.request('/health');
+
+      expect(res.status).toBe(200);
+      const requestId = res.headers.get('X-Request-ID');
+      expect(requestId).toBeDefined();
+      // Should be a valid UUID format
+      expect(requestId).toMatch(/^[a-zA-Z0-9-]{36}$/);
+    });
+
+    it('should use valid incoming x-request-id header', async () => {
+      const incomingId = 'test-request-id-12345';
+      const res = await app.request('/health', {
+        headers: { 'x-request-id': incomingId },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('X-Request-ID')).toBe(incomingId);
+    });
+
+    it('should reject invalid x-request-id header and generate new one', async () => {
+      const invalidId = '<script>alert("xss")</script>';
+      const res = await app.request('/health', {
+        headers: { 'x-request-id': invalidId },
+      });
+
+      expect(res.status).toBe(200);
+      const requestId = res.headers.get('X-Request-ID');
+      expect(requestId).not.toBe(invalidId);
+      // Should be a valid UUID format
+      expect(requestId).toMatch(/^[a-zA-Z0-9-]{36}$/);
     });
   });
 });

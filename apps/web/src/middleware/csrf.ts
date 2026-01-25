@@ -17,20 +17,24 @@ function validateUrl(url: string, name: string): string {
 }
 
 /**
+ * Check if we're in a known development environment.
+ * Be explicit about what counts as development to fail-secure by default.
+ */
+function isDevelopmentEnv(): boolean {
+  return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+}
+
+/**
  * Get allowed origins for CSRF validation.
- * In development, allows localhost on configured port. In production, requires APP_URL env var.
+ * In development, allows localhost on configured port. Otherwise, requires APP_URL env var.
  */
 function getAllowedOrigins(): string[] {
   const origins: string[] = [];
 
   // In development, derive origins from configured port
-  if (process.env.NODE_ENV !== 'production') {
+  if (isDevelopmentEnv()) {
     const port = process.env.PORT || '3000';
     origins.push(`http://localhost:${port}`, `http://127.0.0.1:${port}`);
-    // Also allow Vite dev server port if different
-    if (port !== '5173') {
-      origins.push('http://localhost:5173');
-    }
   }
 
   // Add production origin from environment (validated)
@@ -41,10 +45,10 @@ function getAllowedOrigins(): string[] {
   return origins;
 }
 
-// Validate at module load time - fail fast in production if APP_URL is missing
+// Validate at module load time - fail fast if not in development and APP_URL is missing
 const allowedOrigins = getAllowedOrigins();
-if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
-  throw new Error('APP_URL environment variable must be set in production for CSRF protection');
+if (!isDevelopmentEnv() && allowedOrigins.length === 0) {
+  throw new Error('APP_URL environment variable must be set for CSRF protection');
 }
 
 // Create CSRF middleware instance once at module load time

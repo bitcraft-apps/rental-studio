@@ -1,14 +1,7 @@
 import type { Context, Hono } from 'hono';
 import { accepts } from 'hono/accepts';
 import { HTTPException } from 'hono/http-exception';
-
-/**
- * Generate a request ID for log correlation.
- * Uses incoming x-request-id header if present, otherwise generates a new one.
- */
-function getRequestId(c: Context): string {
-  return c.req.header('x-request-id') || crypto.randomUUID();
-}
+import { getRequestId } from './request-id';
 
 /**
  * Log an error with structured context for debugging and monitoring.
@@ -60,7 +53,7 @@ const HTML_ESCAPE_MAP: Record<string, string> = {
 };
 
 function escapeHtml(str: string): string {
-  return str.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char]);
+  return str.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char] ?? char);
 }
 
 /**
