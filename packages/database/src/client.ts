@@ -49,9 +49,22 @@ export type DatabaseClient = {
 
 export function createDb(config: DatabaseConfig): DatabaseClient {
   const isProduction = process.env.NODE_ENV === 'production';
-  // Default to permissive SSL in production (works with most managed databases)
-  // For stricter security, explicitly pass ssl config with CA cert
-  const ssl = config.ssl ?? (isProduction ? { rejectUnauthorized: false } : false);
+
+  // Determine SSL configuration
+  let ssl: boolean | { rejectUnauthorized: boolean; ca?: string };
+  if (config.ssl !== undefined) {
+    ssl = config.ssl;
+  } else if (isProduction) {
+    // Warn about permissive SSL - users should configure explicit SSL for production
+    console.warn(
+      '[DATABASE] Using permissive SSL (rejectUnauthorized: false). ' +
+        'For production, configure explicit SSL with CA certificate via DATABASE_CA_CERT ' +
+        'or pass ssl config to createDb().',
+    );
+    ssl = { rejectUnauthorized: false };
+  } else {
+    ssl = false;
+  }
 
   const pool = new Pool({
     connectionString: config.connectionString,

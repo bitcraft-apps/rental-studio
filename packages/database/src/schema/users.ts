@@ -21,11 +21,9 @@ export const users = pgTable(
     // Email unique per tenant, not globally
     tenantEmailUnique: unique('users_tenant_id_email_unique').on(table.tenantId, table.email),
     tenantIdx: index('users_tenant_id_idx').on(table.tenantId),
-    // Basic email format validation (note: \\. for literal dot in PostgreSQL regex)
-    emailCheck: check(
-      'users_email_check',
-      sql`${table.email} ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'`,
-    ),
+    // Basic email format validation - permissive to avoid rejecting valid edge cases
+    // Strict validation should be done in the application layer with better error messages
+    emailCheck: check('users_email_check', sql`${table.email} ~* '^[^@\\s]+@[^@\\s]+$'`),
   }),
 );
 

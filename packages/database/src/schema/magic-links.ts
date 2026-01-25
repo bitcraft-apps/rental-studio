@@ -12,6 +12,9 @@ import { users } from './users';
  * CLEANUP:
  * - Implement a scheduled job to purge expired/used tokens
  * - Example: DELETE FROM magic_links WHERE expires_at < NOW() - INTERVAL '7 days'
+ *
+ * NOTE: No updated_at column - magic links are immutable after creation.
+ * They can only be marked as used (via used_at), never modified.
  */
 export const magicLinks = pgTable(
   'magic_links',
@@ -32,6 +35,10 @@ export const magicLinks = pgTable(
   (table) => ({
     userIdx: index('magic_links_user_id_idx').on(table.userId),
     expiresIdx: index('magic_links_expires_at_idx').on(table.expiresAt),
+    // Support rate limiting queries by IP address
+    ipCreatedIdx: index('magic_links_ip_created_idx').on(table.ipAddress, table.createdAt),
+    // Support per-user rate limiting
+    userCreatedIdx: index('magic_links_user_created_idx').on(table.userId, table.createdAt),
   }),
 );
 

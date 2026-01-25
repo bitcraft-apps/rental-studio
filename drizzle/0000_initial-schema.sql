@@ -76,7 +76,7 @@ CREATE TABLE "users" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "users_tenant_id_email_unique" UNIQUE("tenant_id","email"),
-	CONSTRAINT "users_email_check" CHECK ("users"."email" ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+	CONSTRAINT "users_email_check" CHECK ("users"."email" ~* '^[^@\s]+@[^@\s]+$')
 );
 --> statement-breakpoint
 ALTER TABLE "design_projects" ADD CONSTRAINT "design_projects_property_id_properties_id_fk" FOREIGN KEY ("property_id") REFERENCES "public"."properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -90,6 +90,8 @@ CREATE INDEX "floor_plans_property_id_idx" ON "floor_plans" USING btree ("proper
 CREATE INDEX "hotspots_floor_plan_id_idx" ON "hotspots" USING btree ("floor_plan_id");--> statement-breakpoint
 CREATE INDEX "magic_links_user_id_idx" ON "magic_links" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "magic_links_expires_at_idx" ON "magic_links" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX "magic_links_ip_created_idx" ON "magic_links" USING btree ("ip_address","created_at");--> statement-breakpoint
+CREATE INDEX "magic_links_user_created_idx" ON "magic_links" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX "properties_tenant_id_idx" ON "properties" USING btree ("tenant_id");--> statement-breakpoint
 CREATE INDEX "users_tenant_id_idx" ON "users" USING btree ("tenant_id");--> statement-breakpoint
 

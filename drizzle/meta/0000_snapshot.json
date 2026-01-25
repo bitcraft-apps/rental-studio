@@ -1,5 +1,5 @@
 {
-  "id": "e453622e-f94f-470f-8f83-05dda886e4eb",
+  "id": "37585917-a25b-477c-bcfe-21b3aff4f7f1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -379,6 +379,48 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "magic_links_ip_created_idx": {
+          "name": "magic_links_ip_created_idx",
+          "columns": [
+            {
+              "expression": "ip_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "magic_links_user_created_idx": {
+          "name": "magic_links_user_created_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -656,7 +698,7 @@
       "checkConstraints": {
         "users_email_check": {
           "name": "users_email_check",
-          "value": "\"users\".\"email\" ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
+          "value": "\"users\".\"email\" ~* '^[^@\\s]+@[^@\\s]+$'"
         }
       },
       "isRLSEnabled": false
