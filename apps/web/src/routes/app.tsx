@@ -4,16 +4,16 @@ import { appRenderer } from '../middleware/renderer';
 
 const appRouter = new Hono();
 
-// Placeholder auth middleware - redirects to login until real auth is implemented
+// Placeholder auth middleware - blocks access until real auth is implemented
 // TODO: Replace with actual session/JWT validation
 appRouter.use(async (c, next) => {
   // When auth is implemented, check session/token here
-  // For now, allow access but log warning in development
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn(
-      `[AUTH] Unprotected access to ${c.req.path} - auth middleware not yet implemented`,
-    );
+  // Fail secure: block access in production, allow in development for testing
+  if (process.env.NODE_ENV === 'production') {
+    // In production, redirect to login until auth is implemented
+    return c.redirect('/auth/login');
   }
+  console.warn(`[AUTH] Unprotected access to ${c.req.path} - auth middleware not yet implemented`);
   await next();
 });
 

@@ -5,9 +5,10 @@ export interface AppLayoutProps {
   children: Child;
 }
 
-export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
-  const copyrightYear = new Date().getFullYear();
+// Calculate once at module load; updates when server restarts in new year
+const COPYRIGHT_YEAR = new Date().getFullYear();
 
+export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
   return (
     <>
       <header>
@@ -38,7 +39,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
       <main class="app-container py-8">{children}</main>
       <footer class="app-container">
         <small>
-          © {copyrightYear} {APP_NAME}. All rights reserved.
+          © {COPYRIGHT_YEAR} {APP_NAME}. All rights reserved.
         </small>
       </footer>
     </>

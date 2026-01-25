@@ -11,8 +11,30 @@ const auth = new Hono();
 // TODO: Add rate limiting middleware before implementing real auth
 // to prevent brute-force attacks on login
 
+/**
+ * Get allowed origins for CSRF validation.
+ * In development, allows localhost. In production, requires APP_URL env var.
+ */
+function getAllowedOrigins(): string[] {
+  const origins: string[] = [];
+
+  // Always allow localhost in development
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push('http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000');
+  }
+
+  // Add production origin from environment
+  if (process.env.APP_URL) {
+    origins.push(process.env.APP_URL);
+  }
+
+  return origins;
+}
+
 // Create CSRF middleware instance once at module load time
-const csrfMiddleware = csrf();
+const csrfMiddleware = csrf({
+  origin: (origin) => getAllowedOrigins().includes(origin),
+});
 
 /**
  * Custom CSRF middleware that wraps Hono's csrf() with a user-friendly error page.

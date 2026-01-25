@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { APP_NAME } from '@rental-studio/core';
 import { Hono } from 'hono';
 import app from './index';
-import { setupErrorHandling } from './middleware/error-handler';
+import { renderErrorPage, setupErrorHandling } from './middleware/error-handler';
 
 /**
  * Creates a test app that wraps the main app with error-triggering routes.
@@ -76,7 +76,7 @@ describe('Web App', () => {
     it('POST /auth/logout should return 501 (not yet implemented)', async () => {
       const res = await app.request('/auth/logout', {
         method: 'POST',
-        headers: { Origin: 'http://localhost' },
+        headers: { Origin: 'http://localhost:3000' },
       });
 
       expect(res.status).toBe(501);
@@ -154,6 +154,38 @@ describe('Web App', () => {
 
       expect(res.status).toBe(404);
       expect(await res.text()).toContain('Not Found');
+    });
+  });
+
+  describe('renderErrorPage', () => {
+    it('should escape HTML in title to prevent XSS', () => {
+      const html = renderErrorPage(500, '<script>alert("xss")</script>', 'Test message');
+
+      expect(html).not.toContain('<script>alert("xss")</script>');
+      expect(html).toContain('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');
+    });
+
+    it('should escape HTML in message to prevent XSS', () => {
+      const html = renderErrorPage(500, 'Error', '<img src=x onerror=alert(1)>');
+
+      expect(html).not.toContain('<img src=x onerror=alert(1)>');
+      expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    });
+
+    it('should reject invalid status codes', () => {
+      expect(() => renderErrorPage(99, 'Error', 'Message')).toThrow('Invalid HTTP status code');
+      expect(() => renderErrorPage(600, 'Error', 'Message')).toThrow('Invalid HTTP status code');
+      expect(() => renderErrorPage(1.5, 'Error', 'Message')).toThrow('Invalid HTTP status code');
+    });
+
+    it('should render valid error page structure', () => {
+      const html = renderErrorPage(404, 'Not Found', 'Page not found');
+
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('<title>404 - Not Found</title>');
+      expect(html).toContain('<h1>404</h1>');
+      expect(html).toContain('Page not found');
+      expect(html).toContain('href="/"');
     });
   });
 });
