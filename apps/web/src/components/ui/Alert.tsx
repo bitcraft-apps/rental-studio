@@ -1,10 +1,10 @@
-import type { FC } from 'hono/jsx';
+import type { Child, FC } from 'hono/jsx';
 
 export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
 
 export interface AlertProps {
   variant?: AlertVariant;
-  children: unknown;
+  children: Child;
 }
 
 const variantStyles: Record<AlertVariant, string> = {

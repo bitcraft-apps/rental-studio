@@ -5,6 +5,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 apps/web/public/styles.css
+apps/web/public/htmx.min.js
 
 # Environment variables
 .env

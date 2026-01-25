@@ -7,7 +7,7 @@ import { BaseLayout } from '../components/layouts/BaseLayout';
 type RendererProps = PropsWithChildren<{ title?: string }>;
 
 /**
- * Base renderer - wraps content in BaseLayout with Pico CSS and HTMX
+ * Base renderer - wraps content in BaseLayout with Tailwind CSS and HTMX
  */
 export const baseRenderer = jsxRenderer(({ children, title }: RendererProps) => {
   return <BaseLayout title={title}>{children}</BaseLayout>;

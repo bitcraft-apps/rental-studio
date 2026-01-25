@@ -1,4 +1,4 @@
-import type { FC } from 'hono/jsx';
+import type { Child, FC } from 'hono/jsx';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 
@@ -7,7 +7,7 @@ export interface ButtonProps {
   variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
-  children: unknown;
+  children: Child;
   // Explicit HTMX attributes for type safety
   'hx-get'?: string;
   'hx-post'?: string;

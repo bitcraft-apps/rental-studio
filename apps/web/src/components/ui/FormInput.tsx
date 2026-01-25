@@ -8,6 +8,7 @@ export interface FormInputProps {
   required?: boolean;
   error?: string;
   value?: string;
+  autocomplete?: string;
   // Explicit HTMX attributes for type safety
   'hx-get'?: string;
   'hx-post'?: string;
@@ -24,6 +25,7 @@ export const FormInput: FC<FormInputProps> = ({
   required = false,
   error,
   value,
+  autocomplete,
   ...htmxProps
 }) => (
   <div class="mb-4">
@@ -38,6 +40,7 @@ export const FormInput: FC<FormInputProps> = ({
       placeholder={placeholder}
       required={required}
       value={value}
+      autocomplete={autocomplete}
       aria-invalid={error ? true : undefined}
       aria-describedby={error ? `${name}-error` : undefined}
       {...htmxProps}

@@ -1,9 +1,9 @@
-import type { FC } from 'hono/jsx';
+import type { Child, FC } from 'hono/jsx';
 
 export interface CardProps {
-  header?: unknown;
-  footer?: unknown;
-  children: unknown;
+  header?: Child;
+  footer?: Child;
+  children: Child;
 }
 
 /**

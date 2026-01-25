@@ -10,6 +10,18 @@ function acceptsHtml(c: Context): boolean {
 }
 
 /**
+ * Escape HTML special characters to prevent XSS
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Render a simple error page with consistent styling
  */
 function renderErrorPage(status: number, title: string, message: string): string {
@@ -18,13 +30,13 @@ function renderErrorPage(status: number, title: string, message: string): string
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${status} - ${title}</title>
+  <title>${status} - ${escapeHtml(title)}</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <main class="container" style="text-align: center; padding-top: 4rem;">
     <h1>${status}</h1>
-    <p>${message}</p>
+    <p>${escapeHtml(message)}</p>
     <p><a href="/">← Back to Home</a></p>
   </main>
 </body>

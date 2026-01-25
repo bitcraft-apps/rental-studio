@@ -8,7 +8,9 @@
     "dev:server": "bun run --hot src/index.ts",
     "dev:css": "bunx @tailwindcss/cli -i ./src/styles/main.css -o ./public/styles.css --watch",
     "build:css": "bunx @tailwindcss/cli -i ./src/styles/main.css -o ./public/styles.css --minify",
-    "build": "bun run build:css && bun run scripts/build.ts",
+    "build:assets": "cp node_modules/htmx.org/dist/htmx.min.js public/htmx.min.js",
+    "build": "bun run build:css && bun run build:assets && bun run scripts/build.ts",
+    "postinstall": "bun run build:assets",
     "start": "bun run dist/index.js",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
@@ -16,7 +18,8 @@
   "dependencies": {
     "@rental-studio/core": "workspace:*",
     "@rental-studio/database": "workspace:*",
-    "hono": "^4.7.0"
+    "hono": "^4.7.0",
+    "htmx.org": "^2.0.8"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.0.0",

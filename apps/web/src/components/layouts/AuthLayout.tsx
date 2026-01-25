@@ -1,8 +1,8 @@
 import { APP_NAME } from '@rental-studio/core';
-import type { FC } from 'hono/jsx';
+import type { Child, FC } from 'hono/jsx';
 
 export interface AuthLayoutProps {
-  children: unknown;
+  children: Child;
 }
 
 export const AuthLayout: FC<AuthLayoutProps> = ({ children }) => {
