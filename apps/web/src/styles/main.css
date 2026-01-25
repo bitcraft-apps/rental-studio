@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/**
+ * Rental Studio Design System
+ *
+ * This stylesheet uses a "Pico CSS-like" approach where semantic HTML elements
+ * are styled by default in @layer base. This means:
+ *
+ * - <button> looks styled without adding classes
+ * - <article> renders as a card
+ * - <nav>, <footer>, <input> all have sensible defaults
+ *
+ * TRADE-OFFS:
+ * - Third-party components using these elements will inherit these styles
+ * - To opt out, use Tailwind utilities to override (e.g., class="bg-transparent")
+ *
+ * This approach reduces class verbosity while maintaining full Tailwind utility access.
+ */
+
 /* =============================================================================
    Theme Configuration
    Tailwind CSS v4 CSS-first configuration

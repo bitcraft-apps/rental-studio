@@ -19,9 +19,12 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // CSRF protection for all state-changing requests (POST, PUT, DELETE, PATCH)
-// Applied globally to ensure all routes are protected
+// Applied globally to ensure all routes are protected.
+// Note: API routes are also protected since they may be called via HTMX with cookie auth.
+// If using token-based auth (Authorization header) for API, CSRF can be removed from /api/*.
 app.use('/auth/*', csrfProtection);
 app.use('/app/*', csrfProtection);
+app.use('/api/*', csrfProtection);
 
 // TODO: Add request ID middleware for request tracing and log correlation
 

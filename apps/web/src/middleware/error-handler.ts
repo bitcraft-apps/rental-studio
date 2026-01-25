@@ -106,6 +106,9 @@ export function setupErrorHandling(app: Hono) {
     const requestId = getRequestId(c);
     logError(c, err, requestId);
 
+    // Set request ID header for client-side error correlation
+    c.header('X-Request-ID', requestId);
+
     // HTTPException messages are assumed to be client-safe (e.g., "Unauthorized", "Bad Request")
     // Do not throw HTTPException with sensitive internal details
     if (err instanceof HTTPException) {
