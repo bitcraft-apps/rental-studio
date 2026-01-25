@@ -68,7 +68,7 @@ export function renderErrorPage(status: number, title: string, message: string):
 export function setupErrorHandling(app: Hono) {
   app.onError((err, c) => {
     // TODO: Replace with structured logger (e.g., pino) that includes request context
-    console.error(`[ERROR] ${err.message}`, err.stack);
+    console.error(`[ERROR] [${c.req.method} ${c.req.path}] ${err.message}`, err.stack);
 
     // HTTPException messages are assumed to be client-safe (e.g., "Unauthorized", "Bad Request")
     // Do not throw HTTPException with sensitive internal details

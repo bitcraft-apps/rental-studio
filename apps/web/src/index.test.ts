@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { APP_NAME } from '@rental-studio/core';
 import { Hono } from 'hono';
 import app from './index';
 import { setupErrorHandling } from './middleware/error-handler';
@@ -40,7 +41,7 @@ describe('Web App', () => {
       const res = await app.request('/');
 
       expect(res.status).toBe(200);
-      expect(await res.text()).toContain('Welcome to Rental Studio');
+      expect(await res.text()).toContain(`Welcome to ${APP_NAME}`);
     });
   });
 
@@ -72,14 +73,23 @@ describe('Web App', () => {
       expect(await res.text()).toContain('Sign In');
     });
 
-    it('POST /auth/logout should redirect to home', async () => {
+    it('POST /auth/logout should return 501 (not yet implemented)', async () => {
       const res = await app.request('/auth/logout', {
         method: 'POST',
         headers: { Origin: 'http://localhost' },
       });
 
-      expect(res.status).toBe(302);
-      expect(res.headers.get('location')).toBe('/');
+      expect(res.status).toBe(501);
+      expect(await res.text()).toContain('Not Implemented');
+    });
+
+    it('POST /auth/logout should reject requests without valid Origin (CSRF)', async () => {
+      const res = await app.request('/auth/logout', {
+        method: 'POST',
+        // No Origin header - should be rejected by CSRF middleware
+      });
+
+      expect(res.status).toBe(403);
     });
   });
 

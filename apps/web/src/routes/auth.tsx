@@ -82,8 +82,11 @@ auth.get('/register', (c) => {
 });
 
 auth.post('/logout', (c) => {
-  // TODO: Clear session
-  return c.redirect('/');
+  // TODO: Implement session invalidation
+  return c.html(
+    renderErrorPage(501, 'Not Implemented', 'Logout functionality is not yet implemented.'),
+    501,
+  );
 });
 
 auth.post('/login', (c) => {

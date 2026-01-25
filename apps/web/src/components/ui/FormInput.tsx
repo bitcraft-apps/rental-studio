@@ -49,7 +49,7 @@ export const FormInput: FC<FormInputProps> = ({
       required={required}
       value={value}
       autocomplete={autocomplete}
-      aria-invalid={error ? true : undefined}
+      aria-invalid={error ? 'true' : undefined}
       aria-describedby={error ? `${name}-error` : undefined}
       {...htmxProps}
     />
