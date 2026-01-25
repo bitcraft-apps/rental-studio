@@ -13,7 +13,16 @@ export const requireAuth = async (c: Context, next: Next) => {
   // When auth is implemented, check session/token here
   // Fail secure: block access in production, allow in development for testing
   if (process.env.NODE_ENV === 'production') {
-    // In production, redirect to login until auth is implemented
+    // Log for security auditing - helps detect probing attempts
+    console.info(
+      JSON.stringify({
+        level: 'info',
+        event: 'auth_redirect',
+        method: c.req.method,
+        path: c.req.path,
+        reason: 'unauthenticated',
+      }),
+    );
     return c.redirect('/auth/login');
   }
 

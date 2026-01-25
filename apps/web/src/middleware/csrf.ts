@@ -4,20 +4,38 @@ import { HTTPException } from 'hono/http-exception';
 import { renderErrorPage } from './error-handler';
 
 /**
+ * Validate that a string is a valid URL.
+ * Throws if invalid, returns the normalized origin if valid.
+ */
+function validateUrl(url: string, name: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.origin;
+  } catch {
+    throw new Error(`Invalid ${name}: ${url}`);
+  }
+}
+
+/**
  * Get allowed origins for CSRF validation.
- * In development, allows localhost. In production, requires APP_URL env var.
+ * In development, allows localhost on configured port. In production, requires APP_URL env var.
  */
 function getAllowedOrigins(): string[] {
   const origins: string[] = [];
 
-  // Always allow localhost in development
+  // In development, derive origins from configured port
   if (process.env.NODE_ENV !== 'production') {
-    origins.push('http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000');
+    const port = process.env.PORT || '3000';
+    origins.push(`http://localhost:${port}`, `http://127.0.0.1:${port}`);
+    // Also allow Vite dev server port if different
+    if (port !== '5173') {
+      origins.push('http://localhost:5173');
+    }
   }
 
-  // Add production origin from environment
+  // Add production origin from environment (validated)
   if (process.env.APP_URL) {
-    origins.push(process.env.APP_URL);
+    origins.push(validateUrl(process.env.APP_URL, 'APP_URL'));
   }
 
   return origins;

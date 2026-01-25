@@ -92,6 +92,23 @@ describe('Web App', () => {
       expect(res.status).toBe(403);
       expect(await res.text()).toContain('session may have expired');
     });
+
+    it('POST /auth/login should reject requests without valid Origin (CSRF)', async () => {
+      const res = await app.request('/auth/login', {
+        method: 'POST',
+        // No Origin header - should be rejected by CSRF middleware
+      });
+
+      expect(res.status).toBe(403);
+      expect(await res.text()).toContain('session may have expired');
+    });
+
+    it('GET /auth/register should return register page', async () => {
+      const res = await app.request('/auth/register');
+
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain('Sign Up');
+    });
   });
 
   describe('App routes (/app/*)', () => {
@@ -103,15 +120,15 @@ describe('Web App', () => {
     });
 
     it('POST to /app routes should reject requests without valid Origin (CSRF)', async () => {
-      // Simulating a hypothetical POST endpoint - CSRF should block it
-      const res = await app.request('/app/some-action', {
+      // Test CSRF on logout form which is part of AppLayout
+      const res = await app.request('/auth/logout', {
         method: 'POST',
+        headers: { Referer: 'http://localhost:3000/app' },
         // No Origin header - should be rejected by CSRF middleware
       });
 
-      // Either 403 (CSRF rejection) or 404 (route not found) is acceptable
-      // The important thing is that it's not a 2xx without CSRF validation
-      expect([403, 404]).toContain(res.status);
+      // CSRF middleware rejects before route handler runs
+      expect(res.status).toBe(403);
     });
   });
 
