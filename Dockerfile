@@ -19,9 +19,11 @@ RUN apk add --no-cache curl
 FROM base AS deps
 
 # Copy workspace configuration files
+# NOTE: When adding new workspace packages, add their package.json here
 COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/core/package.json ./packages/core/
+COPY packages/database/package.json ./packages/database/
 
 # Install all dependencies (including devDependencies for build)
 RUN bun install --frozen-lockfile
