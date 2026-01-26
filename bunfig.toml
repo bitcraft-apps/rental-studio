@@ -1,0 +1,3 @@
+# Configure JSX for Hono
+jsx = "react-jsx"
+jsxImportSource = "hono/jsx"

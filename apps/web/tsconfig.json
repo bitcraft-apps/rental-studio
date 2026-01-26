@@ -3,10 +3,12 @@
   "compilerOptions": {
     "baseUrl": ".",
     "types": ["@types/bun"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
     "paths": {
       "@rental-studio/core": ["../../packages/core/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

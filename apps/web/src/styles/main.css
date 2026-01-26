@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/**
+ * Rental Studio Design System
+ *
+ * This stylesheet uses a "Pico CSS-like" approach where semantic HTML elements
+ * are styled by default in @layer base. This means:
+ *
+ * - <button> looks styled without adding classes
+ * - <article> renders as a card
+ * - <nav>, <footer>, <input> all have sensible defaults
+ *
+ * TRADE-OFFS:
+ * - Third-party components using these elements will inherit these styles
+ * - To opt out, use Tailwind utilities to override (e.g., class="bg-transparent")
+ *
+ * This approach reduces class verbosity while maintaining full Tailwind utility access.
+ */
+
+/* =============================================================================
+   Theme Configuration
+   Tailwind CSS v4 CSS-first configuration
+   ============================================================================= */
+
+@theme {
+  /* Primary brand color */
+  --color-primary: oklch(0.55 0.15 250);
+
+  /* Semantic colors */
+  --color-danger: oklch(0.55 0.2 25);
+  --color-success: oklch(0.65 0.15 145);
+  --color-warning: oklch(0.75 0.15 85);
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+/* =============================================================================
+   Semantic HTML Defaults (Pico-like base layer)
+   Elements look good without adding classes
+   ============================================================================= */
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 min-h-screen font-sans;
+  }
+
+  /* Typography */
+  h1 {
+    @apply text-3xl font-bold tracking-tight mb-4;
+  }
+  h2 {
+    @apply text-2xl font-semibold mb-3;
+  }
+  h3 {
+    @apply text-xl font-semibold mb-2;
+  }
+  h4 {
+    @apply text-lg font-medium mb-2;
+  }
+
+  p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  a {
+    @apply text-primary underline-offset-2 hover:underline focus:outline-2 focus:outline-primary focus:outline-offset-2;
+  }
+
+  small {
+    @apply text-sm text-gray-500;
+  }
+
+  strong {
+    @apply font-semibold;
+  }
+
+  /* Buttons - base styling for all button elements */
+  button {
+    @apply px-4 py-2 bg-primary text-white font-medium rounded-md
+           hover:opacity-90 transition-opacity cursor-pointer
+           focus:outline-2 focus:outline-primary focus:outline-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  button.secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300;
+  }
+
+  button.outline {
+    @apply bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50;
+  }
+
+  button.danger {
+    @apply bg-danger text-white;
+  }
+
+  /* Form elements - whitelist approach for text-like inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="search"],
+  input:not([type]),
+  select,
+  textarea {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md bg-white
+           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+           disabled:bg-gray-100 disabled:cursor-not-allowed;
+  }
+
+  input[aria-invalid="true"],
+  select[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
+    @apply border-danger focus:ring-danger/50 focus:border-danger;
+  }
+
+  label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  /* Cards (article element) */
+  article {
+    @apply bg-white rounded-lg border border-gray-200 p-6 shadow-sm;
+  }
+
+  article > header {
+    @apply pb-4 mb-4 border-b border-gray-100;
+  }
+
+  article > footer {
+    @apply pt-4 mt-4 border-t border-gray-100;
+  }
+
+  /* Navigation */
+  nav {
+    @apply bg-white border-b border-gray-200;
+  }
+
+  nav ul {
+    @apply flex items-center gap-4 list-none m-0 p-0;
+  }
+
+  nav a {
+    @apply text-gray-600 no-underline hover:text-gray-900 focus:outline-2 focus:outline-primary focus:outline-offset-2;
+  }
+
+  /* Footer */
+  footer {
+    @apply text-sm text-gray-500 py-6;
+  }
+
+  /* Headings group (hgroup) */
+  hgroup {
+    @apply mb-6;
+  }
+
+  hgroup h1 {
+    @apply mb-1;
+  }
+
+  hgroup p {
+    @apply text-gray-500 mb-0;
+  }
+}
+
+/* =============================================================================
+   Custom Utilities
+   ============================================================================= */
+
+@layer utilities {
+  /* App container utility - use instead of Tailwind's built-in container */
+  .app-container {
+    @apply max-w-5xl mx-auto px-4;
+  }
+
+  /* Responsive grid utility */
+  .app-grid {
+    @apply grid gap-6;
+  }
+
+  @media (min-width: 768px) {
+    .app-grid {
+      @apply grid-cols-2;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .app-grid {
+      @apply grid-cols-3;
+    }
+  }
+
+  /* Logout button styled as link */
+  .logout-btn {
+    @apply bg-transparent text-gray-500 hover:text-gray-700 hover:opacity-100 p-0 font-normal;
+  }
+
+  /* HTMX Loading Indicators */
+  .htmx-indicator {
+    display: none;
+  }
+
+  .htmx-request .htmx-indicator,
+  .htmx-request.htmx-indicator {
+    display: inline-block;
+  }
+}
