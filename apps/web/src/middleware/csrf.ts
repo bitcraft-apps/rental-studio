@@ -49,8 +49,18 @@ function getAllowedOrigins(): string[] {
 /**
  * Validate CSRF configuration at startup.
  * Fails fast in production if APP_URL is not properly configured.
+ * Warns if NODE_ENV is not explicitly set to help catch deployment misconfigurations.
  */
 function validateCsrfConfig(): void {
+  // Warn if NODE_ENV is not set - helps catch deployment misconfigurations
+  // where CSRF will fail because no origins are allowed
+  if (!process.env.NODE_ENV) {
+    console.warn(
+      '[CSRF] NODE_ENV not set. Assuming production security posture. ' +
+        'Set NODE_ENV=development for local development or NODE_ENV=production with APP_URL for production.',
+    );
+  }
+
   if (!isProduction()) return;
 
   const appUrl = process.env.APP_URL;

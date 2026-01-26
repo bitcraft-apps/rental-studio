@@ -5,6 +5,16 @@ import { appRenderer } from '../middleware/renderer';
 
 const appRouter = new Hono();
 
+/**
+ * Middleware order:
+ * 1. CSRF protection (applied at app level in index.ts, runs first)
+ * 2. Authentication check (redirects to login if not authenticated)
+ * 3. Renderer (wraps response in AppLayout)
+ *
+ * Note: CSRF runs before auth, so unauthenticated POST requests to /app/*
+ * will receive a 403 CSRF error instead of a redirect to login. This is
+ * intentional - it prevents CSRF probing attacks against protected routes.
+ */
 appRouter.use(requireAuth);
 appRouter.use(appRenderer);
 

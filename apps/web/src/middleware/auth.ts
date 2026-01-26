@@ -19,7 +19,8 @@ export const requireAuth = async (c: Context, next: Next) => {
     const bypassAuth = process.env.BYPASS_AUTH === 'true';
 
     if (isDevelopment() && bypassAuth) {
-      // Only log once per request path to reduce noise
+      // Log once per request (context is per-request, so this just prevents
+      // duplicate logs if middleware runs multiple times in the same request)
       if (!c.get('authWarningLogged')) {
         console.warn(`[AUTH] Bypassing auth for ${c.req.path} (BYPASS_AUTH=true)`);
         c.set('authWarningLogged', true);

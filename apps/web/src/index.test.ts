@@ -132,6 +132,22 @@ describe('Web App', () => {
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('Dashboard');
     });
+
+    it('GET /app should redirect to login when not authenticated (BYPASS_AUTH=false)', async () => {
+      // Temporarily disable auth bypass to test real auth behavior
+      const originalBypass = process.env.BYPASS_AUTH;
+      process.env.BYPASS_AUTH = 'false';
+
+      try {
+        const res = await app.request('/app');
+
+        expect(res.status).toBe(302);
+        expect(res.headers.get('Location')).toBe('/auth/login');
+      } finally {
+        // Restore original value
+        process.env.BYPASS_AUTH = originalBypass;
+      }
+    });
   });
 
   describe('API routes (/api/*)', () => {

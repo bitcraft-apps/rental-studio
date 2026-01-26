@@ -19,7 +19,6 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content={metaDescription} />
         <title>{pageTitle}</title>
-        <link rel="icon" href="/static/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="/static/styles.css" />
         {/*
           HTMX loaded locally from node_modules (copied via build:assets script).
