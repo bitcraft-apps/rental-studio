@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:labs
+# NOTE: labs syntax required for COPY --parents support
 
 # Multi-stage Dockerfile for Rental Studio (Bun + Hono)
 # Supports both development and production builds
@@ -18,7 +19,7 @@ RUN apk add --no-cache curl
 # =============================================================================
 FROM base AS deps
 
-# Copy workspace configuration files (auto-discovers all workspace packages)
+# Copy workspace package.json files (globs expand at build time, matching "workspaces" in package.json)
 COPY package.json bun.lock ./
 COPY --parents apps/*/package.json packages/*/package.json ./
 
