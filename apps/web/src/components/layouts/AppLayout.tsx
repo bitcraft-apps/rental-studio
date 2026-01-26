@@ -6,7 +6,8 @@ export interface AppLayoutProps {
 }
 
 export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
-  // Calculate per-request to avoid stale values in long-running processes
+  // Calculate per-request to ensure correct year across New Year's boundary.
+  // Do NOT cache at module level - SSR processes can run for months.
   const copyrightYear = new Date().getFullYear();
 
   return (

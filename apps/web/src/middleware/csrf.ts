@@ -1,59 +1,74 @@
 import type { Context, Next } from 'hono';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
+import { isDevelopment, isProduction } from '../lib/env';
 import { renderErrorPage } from './error-handler';
 
 /**
  * Validate that a string is a valid URL.
- * Throws if invalid, returns the normalized origin if valid.
+ * Returns the normalized origin if valid, null if invalid.
  */
-function validateUrl(url: string, name: string): string {
+function parseOrigin(url: string): string | null {
   try {
     const parsed = new URL(url);
     return parsed.origin;
   } catch {
-    throw new Error(`Invalid ${name}: ${url}`);
+    return null;
   }
 }
 
 /**
- * Check if we're in a known development environment.
- * Be explicit about what counts as development to fail-secure by default.
- */
-function isDevelopmentEnv(): boolean {
-  return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
-}
-
-/**
  * Get allowed origins for CSRF validation.
+ * Called per-request to support dynamic environment changes (e.g., container restarts).
  * In development, allows localhost on configured port. Otherwise, requires APP_URL env var.
  */
 function getAllowedOrigins(): string[] {
   const origins: string[] = [];
 
   // In development, derive origins from configured port
-  if (isDevelopmentEnv()) {
+  if (isDevelopment()) {
     const port = process.env.PORT || '3000';
     origins.push(`http://localhost:${port}`, `http://127.0.0.1:${port}`);
   }
 
   // Add production origin from environment (validated)
-  if (process.env.APP_URL) {
-    origins.push(validateUrl(process.env.APP_URL, 'APP_URL'));
+  const appUrl = process.env.APP_URL;
+  if (appUrl) {
+    const origin = parseOrigin(appUrl);
+    if (origin) {
+      origins.push(origin);
+    } else if (isProduction()) {
+      // Log warning in production if APP_URL is malformed
+      console.error(`[CSRF] Invalid APP_URL: ${appUrl}`);
+    }
   }
 
   return origins;
 }
 
-// Validate at module load time - fail fast if not in development and APP_URL is missing
-const allowedOrigins = getAllowedOrigins();
-if (!isDevelopmentEnv() && allowedOrigins.length === 0) {
-  throw new Error('APP_URL environment variable must be set for CSRF protection');
+/**
+ * Validate CSRF configuration at startup.
+ * Fails fast in production if APP_URL is not properly configured.
+ */
+function validateCsrfConfig(): void {
+  if (!isProduction()) return;
+
+  const appUrl = process.env.APP_URL;
+  if (!appUrl) {
+    throw new Error('APP_URL environment variable must be set for CSRF protection in production');
+  }
+  if (!parseOrigin(appUrl)) {
+    throw new Error(`Invalid APP_URL: ${appUrl}`);
+  }
 }
 
+// Validate at module load time - fail fast in production
+validateCsrfConfig();
+
 // Create CSRF middleware instance once at module load time
+// Origin validation is dynamic to support environment changes
 const csrfMiddleware = csrf({
-  origin: (origin) => allowedOrigins.includes(origin),
+  origin: (origin) => getAllowedOrigins().includes(origin),
 });
 
 /**

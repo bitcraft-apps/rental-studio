@@ -1,4 +1,5 @@
 import type { Context, Next } from 'hono';
+import { isDevelopment } from '../lib/env';
 
 /**
  * Placeholder auth middleware - blocks access until real auth is implemented.
@@ -15,10 +16,9 @@ export const requireAuth = async (c: Context, next: Next) => {
 
   if (!isAuthenticated) {
     // Require explicit opt-in to bypass auth (fail-secure by default)
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
     const bypassAuth = process.env.BYPASS_AUTH === 'true';
 
-    if (isDevelopment && bypassAuth) {
+    if (isDevelopment() && bypassAuth) {
       // Only log once per request path to reduce noise
       if (!c.get('authWarningLogged')) {
         console.warn(`[AUTH] Bypassing auth for ${c.req.path} (BYPASS_AUTH=true)`);

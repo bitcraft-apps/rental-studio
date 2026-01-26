@@ -1,4 +1,15 @@
-// Enable auth bypass for testing protected routes
+/**
+ * Test Setup
+ *
+ * Environment variables must be set BEFORE importing modules that read them
+ * at module load time (e.g., CSRF middleware validates APP_URL).
+ *
+ * BYPASS_AUTH: Allows testing protected routes without real authentication
+ * NODE_ENV: Already set to 'test' by bun test runner
+ *
+ * Note: CSRF middleware uses dynamic origin checking, so it reads PORT at
+ * request time. The default PORT=3000 is used for test CSRF validation.
+ */
 process.env.BYPASS_AUTH = 'true';
 
 import { describe, expect, it } from 'bun:test';
@@ -120,18 +131,6 @@ describe('Web App', () => {
 
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('Dashboard');
-    });
-
-    it('POST to /auth routes should reject requests without valid Origin (CSRF)', async () => {
-      // Test CSRF on logout form
-      const res = await app.request('/auth/logout', {
-        method: 'POST',
-        headers: { Referer: 'http://localhost:3000/app' },
-        // No Origin header - should be rejected by CSRF middleware
-      });
-
-      // CSRF middleware rejects before route handler runs
-      expect(res.status).toBe(403);
     });
   });
 

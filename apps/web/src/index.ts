@@ -22,11 +22,23 @@ if (process.env.NODE_ENV !== 'test') {
 // Request ID for tracing and log correlation (must be before other middleware)
 app.use(requestId);
 
-// CSRF protection for state-changing requests (POST, PUT, DELETE, PATCH).
-// Hono's csrf() middleware only validates Origin on non-safe methods;
-// safe methods (GET, HEAD, OPTIONS) pass through unvalidated.
-// API routes are also protected since they may be called via HTMX with cookie auth.
-// If using token-based auth (Authorization header) for API, CSRF can be removed from /api/*.
+/**
+ * CSRF Protection
+ *
+ * Applied to routes that handle state-changing requests (POST, PUT, DELETE, PATCH).
+ * Hono's csrf() middleware validates Origin header on non-safe methods;
+ * safe methods (GET, HEAD, OPTIONS) pass through unvalidated.
+ *
+ * Why protect /api/* routes?
+ * - HTMX requests use cookie-based sessions (same-origin)
+ * - Without CSRF, a malicious site could submit API requests using user's cookies
+ * - If you add token-based auth (Authorization header), CSRF protection is not needed
+ *   for those endpoints since the token is not automatically attached like cookies
+ *
+ * For machine-to-machine API clients using token auth, you can:
+ * 1. Use a separate /api/v1/* route without CSRF, OR
+ * 2. Keep CSRF and have clients send valid Origin header
+ */
 app.use('/auth/*', csrfProtection);
 app.use('/app/*', csrfProtection);
 app.use('/api/*', csrfProtection);

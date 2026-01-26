@@ -66,12 +66,15 @@ export function renderErrorPage(status: number, title: string, message: string):
     throw new Error(`Invalid HTTP status code: ${status}`);
   }
 
+  // Defense in depth: escape all dynamic values even though status is validated
+  const safeStatus = String(status);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${status} - ${escapeHtml(title)}</title>
+  <title>${safeStatus} - ${escapeHtml(title)}</title>
   <link rel="stylesheet" href="/static/styles.css">
   <style>
     /* Critical inline styles in case CSS fails to load */
@@ -83,7 +86,7 @@ export function renderErrorPage(status: number, title: string, message: string):
 </head>
 <body>
   <main class="app-container error-page" style="text-align: center; padding-top: 4rem;">
-    <h1>${status}</h1>
+    <h1>${safeStatus}</h1>
     <p>${escapeHtml(message)}</p>
     <p><a href="/">← Back to Home</a></p>
   </main>

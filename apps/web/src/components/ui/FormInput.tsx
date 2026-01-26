@@ -4,6 +4,8 @@ import type { HtmxAttributes } from '../../types/htmx';
 export interface FormInputProps extends HtmxAttributes {
   name: string;
   label: string;
+  /** Optional custom id. Defaults to name. Use when multiple forms on a page have same field names. */
+  id?: string;
   type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'date';
   placeholder?: string;
   required?: boolean;
@@ -15,6 +17,7 @@ export interface FormInputProps extends HtmxAttributes {
 export const FormInput: FC<FormInputProps> = ({
   name,
   label,
+  id,
   type = 'text',
   placeholder,
   required = false,
@@ -22,36 +25,41 @@ export const FormInput: FC<FormInputProps> = ({
   value,
   autocomplete,
   ...htmxProps
-}) => (
-  <div class="mb-4">
-    <label for={name}>
-      {label}
-      {required && (
-        <>
-          <span class="text-danger" aria-hidden="true">
-            {' '}
-            *
-          </span>
-          <span class="sr-only"> (required)</span>
-        </>
+}) => {
+  const inputId = id || name;
+  const errorId = `${inputId}-error`;
+
+  return (
+    <div class="mb-4">
+      <label for={inputId}>
+        {label}
+        {required && (
+          <>
+            <span class="text-danger" aria-hidden="true">
+              {' '}
+              *
+            </span>
+            <span class="sr-only"> (required)</span>
+          </>
+        )}
+      </label>
+      <input
+        type={type}
+        id={inputId}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        value={value}
+        autocomplete={autocomplete}
+        aria-invalid={error ? 'true' : undefined}
+        aria-describedby={error ? errorId : undefined}
+        {...htmxProps}
+      />
+      {error && (
+        <small id={errorId} class="text-danger">
+          {error}
+        </small>
       )}
-    </label>
-    <input
-      type={type}
-      id={name}
-      name={name}
-      placeholder={placeholder}
-      required={required}
-      value={value}
-      autocomplete={autocomplete}
-      aria-invalid={error ? 'true' : undefined}
-      aria-describedby={error ? `${name}-error` : undefined}
-      {...htmxProps}
-    />
-    {error && (
-      <small id={`${name}-error`} class="text-danger">
-        {error}
-      </small>
-    )}
-  </div>
-);
+    </div>
+  );
+};
