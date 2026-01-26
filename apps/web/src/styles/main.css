@@ -100,8 +100,16 @@
     @apply bg-danger text-white;
   }
 
-  /* Form elements */
-  input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
+  /* Form elements - whitelist approach for text-like inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="search"],
+  input:not([type]),
   select,
   textarea {
     @apply w-full px-3 py-2 border border-gray-300 rounded-md bg-white

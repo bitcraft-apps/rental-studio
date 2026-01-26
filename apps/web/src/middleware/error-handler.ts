@@ -60,7 +60,12 @@ function escapeHtml(str: string): string {
  * Render a simple error page with consistent styling.
  * Exported for reuse in route handlers that need to return error pages.
  */
-export function renderErrorPage(status: number, title: string, message: string): string {
+export function renderErrorPage(
+  status: number,
+  title: string,
+  message: string,
+  requestId?: string,
+): string {
   // Validate status is a safe integer to prevent injection
   if (!Number.isInteger(status) || status < 100 || status > 599) {
     throw new Error(`Invalid HTTP status code: ${status}`);
@@ -68,6 +73,9 @@ export function renderErrorPage(status: number, title: string, message: string):
 
   // Defense in depth: escape all dynamic values even though status is validated
   const safeStatus = String(status);
+  const referenceHtml = requestId
+    ? `<p><small>Reference: ${escapeHtml(requestId)}</small></p>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -88,6 +96,7 @@ export function renderErrorPage(status: number, title: string, message: string):
   <main class="app-container error-page" style="text-align: center; padding-top: 4rem;">
     <h1>${safeStatus}</h1>
     <p>${escapeHtml(message)}</p>
+    ${referenceHtml}
     <p><a href="/">← Back to Home</a></p>
   </main>
 </body>
@@ -113,7 +122,7 @@ export function setupErrorHandling(app: Hono) {
     // Do not throw HTTPException with sensitive internal details
     if (err instanceof HTTPException) {
       if (acceptsHtml(c)) {
-        return c.html(renderErrorPage(err.status, 'Error', err.message), err.status);
+        return c.html(renderErrorPage(err.status, 'Error', err.message, requestId), err.status);
       }
       return c.json({ error: err.message, requestId }, err.status);
     }
@@ -122,20 +131,26 @@ export function setupErrorHandling(app: Hono) {
     const message = process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message;
 
     if (acceptsHtml(c)) {
-      return c.html(renderErrorPage(500, 'Error', message), 500);
+      return c.html(renderErrorPage(500, 'Error', message, requestId), 500);
     }
     return c.json({ error: message, requestId }, 500);
   });
 
   app.notFound((c) => {
+    const requestId = getRequestId(c);
+    c.header('X-Request-ID', requestId);
+
     if (acceptsHtml(c)) {
       return c.html(
-        renderErrorPage(404, 'Not Found', 'The page you requested could not be found.'),
+        renderErrorPage(404, 'Not Found', 'The page you requested could not be found.', requestId),
         404,
       );
     }
 
-    const response: { error: string; path?: string } = { error: 'Not Found' };
+    const response: { error: string; path?: string; requestId: string } = {
+      error: 'Not Found',
+      requestId,
+    };
     if (process.env.NODE_ENV !== 'production') {
       response.path = c.req.path;
     }

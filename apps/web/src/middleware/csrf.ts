@@ -19,7 +19,6 @@ function parseOrigin(url: string): string | null {
 
 /**
  * Get allowed origins for CSRF validation.
- * Called per-request to support dynamic environment changes (e.g., container restarts).
  * In development, allows localhost on configured port. Otherwise, requires APP_URL env var.
  */
 function getAllowedOrigins(): string[] {
@@ -44,6 +43,23 @@ function getAllowedOrigins(): string[] {
   }
 
   return origins;
+}
+
+/**
+ * Cached allowed origins for O(1) lookup with TTL.
+ * Caching reduces per-request overhead while still supporting environment changes.
+ */
+let cachedOrigins: Set<string> | null = null;
+let cacheExpiry = 0;
+const CACHE_TTL_MS = 60_000; // 1 minute
+
+function getAllowedOriginsSet(): Set<string> {
+  const now = Date.now();
+  if (!cachedOrigins || now > cacheExpiry) {
+    cachedOrigins = new Set(getAllowedOrigins());
+    cacheExpiry = now + CACHE_TTL_MS;
+  }
+  return cachedOrigins;
 }
 
 /**
@@ -76,9 +92,9 @@ function validateCsrfConfig(): void {
 validateCsrfConfig();
 
 // Create CSRF middleware instance once at module load time
-// Origin validation is dynamic to support environment changes
+// Origin validation uses cached Set for O(1) lookup
 const csrfMiddleware = csrf({
-  origin: (origin) => getAllowedOrigins().includes(origin),
+  origin: (origin) => getAllowedOriginsSet().has(origin),
 });
 
 /**

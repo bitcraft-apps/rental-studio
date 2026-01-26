@@ -43,6 +43,7 @@ interface HealthResponse {
 interface ErrorResponse {
   error: string;
   path?: string;
+  requestId?: string;
 }
 
 interface VersionResponse {
@@ -170,6 +171,7 @@ describe('Web App', () => {
       expect(res.status).toBe(404);
       expect(body.error).toBe('Not Found');
       expect(body.path).toBe('/nonexistent-route');
+      expect(body.requestId).toBeDefined();
     });
 
     it('should return 404 JSON for unknown API routes', async () => {
@@ -180,6 +182,7 @@ describe('Web App', () => {
 
       expect(res.status).toBe(404);
       expect(body.error).toBe('Not Found');
+      expect(body.requestId).toBeDefined();
     });
 
     it('should handle thrown errors gracefully', async () => {
@@ -192,15 +195,19 @@ describe('Web App', () => {
       expect(res.status).toBe(500);
       // Note: Actual error message is only exposed when NODE_ENV !== 'production'
       expect(body.error).toBe('Test error');
+      expect(body.requestId).toBeDefined();
     });
 
     it('should return 404 HTML for browser requests', async () => {
       const res = await app.request('/nonexistent-route', {
         headers: { Accept: 'text/html' },
       });
+      const html = await res.text();
 
       expect(res.status).toBe(404);
-      expect(await res.text()).toContain('Not Found');
+      expect(html).toContain('Not Found');
+      // Should include request ID reference in HTML
+      expect(html).toContain('Reference:');
     });
   });
 
@@ -233,6 +240,25 @@ describe('Web App', () => {
       expect(html).toContain('<h1>404</h1>');
       expect(html).toContain('Page not found');
       expect(html).toContain('href="/"');
+    });
+
+    it('should include request ID when provided', () => {
+      const html = renderErrorPage(500, 'Error', 'Test error', 'test-request-123');
+
+      expect(html).toContain('Reference: test-request-123');
+    });
+
+    it('should escape request ID to prevent XSS', () => {
+      const html = renderErrorPage(500, 'Error', 'Test error', '<script>xss</script>');
+
+      expect(html).not.toContain('<script>xss</script>');
+      expect(html).toContain('&lt;script&gt;xss&lt;/script&gt;');
+    });
+
+    it('should not include reference line when request ID is not provided', () => {
+      const html = renderErrorPage(500, 'Error', 'Test error');
+
+      expect(html).not.toContain('Reference:');
     });
   });
 

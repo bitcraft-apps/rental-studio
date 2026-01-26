@@ -21,7 +21,8 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
         <title>{pageTitle}</title>
         <link rel="stylesheet" href="/static/styles.css" />
         {/*
-          HTMX loaded locally from node_modules (copied via build:assets script).
+          HTMX served locally from node_modules (copied via build:assets script).
+          Local serving avoids CDN dependency and privacy concerns.
           hx-boost on body enables AJAX navigation for all links/forms by default.
           Use hx-boost="false" on elements that need native behavior (file downloads, external links).
         */}

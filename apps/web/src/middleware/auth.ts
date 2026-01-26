@@ -1,6 +1,19 @@
 import type { Context, Next } from 'hono';
 import { isDevelopment } from '../lib/env';
 
+// Log auth bypass warning once at startup if enabled
+if (isDevelopment() && process.env.BYPASS_AUTH === 'true') {
+  console.warn('[AUTH] Auth bypass enabled for development (BYPASS_AUTH=true)');
+}
+
+/**
+ * Check if auth bypass is currently enabled.
+ * Evaluated at runtime to support dynamic environment changes (e.g., in tests).
+ */
+function isAuthBypassEnabled(): boolean {
+  return isDevelopment() && process.env.BYPASS_AUTH === 'true';
+}
+
 /**
  * Placeholder auth middleware - blocks access until real auth is implemented.
  *
@@ -15,16 +28,7 @@ export const requireAuth = async (c: Context, next: Next) => {
   const isAuthenticated = false; // TODO: check session/token
 
   if (!isAuthenticated) {
-    // Require explicit opt-in to bypass auth (fail-secure by default)
-    const bypassAuth = process.env.BYPASS_AUTH === 'true';
-
-    if (isDevelopment() && bypassAuth) {
-      // Log once per request (context is per-request, so this just prevents
-      // duplicate logs if middleware runs multiple times in the same request)
-      if (!c.get('authWarningLogged')) {
-        console.warn(`[AUTH] Bypassing auth for ${c.req.path} (BYPASS_AUTH=true)`);
-        c.set('authWarningLogged', true);
-      }
+    if (isAuthBypassEnabled()) {
       await next();
       return;
     }
