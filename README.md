@@ -30,7 +30,7 @@ Property management and renovation planning platform for landlords.
 | Frontend | Hono JSX + HTMX |
 | Database | PostgreSQL + Drizzle ORM |
 | Email | Resend |
-| Hosting | Docker + Dokku (example), Cloudflare CDN |
+| Hosting | Docker (Dokku example), Cloudflare CDN |
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ Property management and renovation planning platform for landlords.
 
 ## Quickstart (recommended: Docker)
 
-This path gets a new dev running in ~15 minutes.
+This path is the fastest way to get running.
 
 ```bash
 # 1) Configure environment
@@ -64,6 +64,9 @@ bun install
 # Copy env template and adjust DATABASE_URL to your local Postgres
 cp .env.example .env
 
+# Ensure the database exists and matches DATABASE_URL
+# Example: createdb rental_studio
+
 # Run database migrations
 bun run db:migrate
 
@@ -80,8 +83,9 @@ See `.env.example` for full list. Key variables:
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`
 - `DATABASE_URL` (used for local development without Docker)
 
-Note: Docker Compose constructs `DATABASE_URL` automatically for the `web` service
-using the `POSTGRES_*` variables and the `postgres` service hostname.
+Note: The Docker Compose files set `DATABASE_URL` for the `web` service using the
+`POSTGRES_*` variables and the `postgres` service hostname. See
+`docker/docker-compose*.yml`.
 
 ## Database Setup & Migrations
 
@@ -109,6 +113,7 @@ bun run docker:dev:build
 ```
 
 The app exposes a health check at `GET /health` (used by Dokku and Docker).
+If you change it, update the Docker and Dokku checks accordingly.
 
 ## Deployment (generic)
 
