@@ -25,7 +25,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
                   <a href="/app/properties">Properties</a>
                 </li>
                 <li>
-                  <a href="/app/tenants">Tenants</a>
+                  <a href="/app/renters">Renters</a>
                 </li>
               </ul>
             </div>
