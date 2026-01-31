@@ -191,7 +191,7 @@ describe('Web App', () => {
 
     it('should return 404 JSON for unknown API routes', async () => {
       const res = await app.request('/api/unknown', {
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'application/json', Host: 'demo.localhost' },
       });
       const body = (await res.json()) as ErrorResponse;
 

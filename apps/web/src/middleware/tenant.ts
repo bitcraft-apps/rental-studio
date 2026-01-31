@@ -13,11 +13,14 @@ function isValidTenantSlug(slug: string): boolean {
 }
 
 function getRequestHost(c: Context): string | null {
+  // Only enable TRUST_PROXY when a trusted proxy strips incoming forwarded headers.
   const trustProxy = process.env.TRUST_PROXY === 'true';
   const forwardedHost = trustProxy ? c.req.header('x-forwarded-host') : null;
   const hostHeader = forwardedHost?.split(',')[0]?.trim() || c.req.header('host');
   if (!hostHeader) return null;
-  return hostHeader.split(':')[0]?.toLowerCase() || null;
+  const host = hostHeader.split(':')[0]?.toLowerCase() || null;
+  if (!host) return null;
+  return host.replace(/^\[(.*)\]$/, '$1');
 }
 
 function resolveTenantSlug(host: string): string | null {
@@ -33,18 +36,14 @@ function resolveTenantSlug(host: string): string | null {
     return slug || null;
   }
 
-  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
-    return null;
-  }
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return null;
 
   if (host.endsWith('.localhost')) {
     const slug = host.slice(0, -'.localhost'.length);
     return slug || null;
   }
 
-  const parts = host.split('.');
-  if (parts.length < 3) return null;
-  return parts[0] || null;
+  return null;
 }
 
 function logTenantIssue(c: Context, reason: string, host?: string, slug?: string): void {
