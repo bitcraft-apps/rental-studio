@@ -13,7 +13,8 @@ function isValidTenantSlug(slug: string): boolean {
 }
 
 function getRequestHost(c: Context): string | null {
-  const forwardedHost = c.req.header('x-forwarded-host');
+  const trustProxy = process.env.TRUST_PROXY === 'true';
+  const forwardedHost = trustProxy ? c.req.header('x-forwarded-host') : null;
   const hostHeader = forwardedHost?.split(',')[0]?.trim() || c.req.header('host');
   if (!hostHeader) return null;
   return hostHeader.split(':')[0]?.toLowerCase() || null;
@@ -21,6 +22,9 @@ function getRequestHost(c: Context): string | null {
 
 function resolveTenantSlug(host: string): string | null {
   const baseDomain = process.env.TENANT_BASE_DOMAIN?.toLowerCase();
+  if (!baseDomain && process.env.NODE_ENV === 'production') {
+    throw new HTTPException(500, { message: 'Tenant base domain not configured' });
+  }
 
   if (baseDomain) {
     if (host === baseDomain) return null;
@@ -43,7 +47,7 @@ function resolveTenantSlug(host: string): string | null {
   return parts[0] || null;
 }
 
-function logTenantIssue(c: Context, reason: string): void {
+function logTenantIssue(c: Context, reason: string, host?: string, slug?: string): void {
   console.info(
     JSON.stringify({
       level: 'info',
@@ -52,6 +56,8 @@ function logTenantIssue(c: Context, reason: string): void {
       method: c.req.method,
       path: c.req.path,
       reason,
+      host,
+      slug,
     }),
   );
 }
@@ -75,14 +81,23 @@ export const withTenant = async (c: Context, next: Next) => {
     throw new HTTPException(404, { message: 'Not Found' });
   }
 
-  const slug = resolveTenantSlug(host);
+  let slug: string | null;
+  try {
+    slug = resolveTenantSlug(host);
+  } catch (error) {
+    if (error instanceof HTTPException) {
+      logTenantIssue(c, 'base_domain_missing', host);
+      throw error;
+    }
+    throw error;
+  }
   if (!slug) {
-    logTenantIssue(c, 'missing_subdomain');
+    logTenantIssue(c, 'missing_subdomain', host);
     throw new HTTPException(404, { message: 'Not Found' });
   }
 
   if (!isValidTenantSlug(slug)) {
-    logTenantIssue(c, 'invalid_subdomain');
+    logTenantIssue(c, 'invalid_subdomain', host, slug);
     throw new HTTPException(404, { message: 'Not Found' });
   }
 

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { Card } from '../components';
 import { requireAuth } from '../middleware/auth';
 import { appRenderer } from '../middleware/renderer';
-import { withTenant } from '../middleware/tenant';
+import { requireTenant, withTenant } from '../middleware/tenant';
 
 const appRouter = new Hono();
 
@@ -22,11 +22,11 @@ appRouter.use(requireAuth);
 appRouter.use(appRenderer);
 
 appRouter.get('/', (c) => {
-  const tenant = c.get('tenant');
+  const tenant = requireTenant(c);
   return c.render(
     <>
       <h1>Dashboard</h1>
-      {tenant ? <p class="text-muted">Workspace: {tenant.slug}</p> : null}
+      <p class="text-muted">Workspace: {tenant.slug}</p>
       <div class="app-grid">
         <Card header={<strong>Properties</strong>}>
           <p>Manage your rental properties</p>
