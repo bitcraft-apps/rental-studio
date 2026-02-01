@@ -6,6 +6,10 @@ Property management and renovation planning platform for landlords.
 
 **Work in Progress** - This project is under active development.
 
+## Documentation
+
+- [Agents Guide](docs/agents.md)
+
 ## Features (Planned)
 
 ### MVP - Renovation Planning
