@@ -17,8 +17,8 @@ so that ...
 
 ## Acceptance Criteria
 
-- [ ]
-- [ ]
+- [ ] Users can ...
+- [ ] The system prevents ...
 
 ## Out of Scope
 

@@ -27,7 +27,7 @@ Agents should prioritize MVP features only:
 
 - **Keep changes minimal.** Prefer small, focused PRs.
 - **Follow existing patterns** in `apps/web` and `packages/`.
-- **Write issues first** for work that changes behavior or data.
+- **Write issues first** (GitHub Issues in this repo) for work that changes behavior or data.
 
 ## Definition of Done
 
