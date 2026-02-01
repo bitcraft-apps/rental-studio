@@ -18,9 +18,16 @@ function getRequestHost(c: Context): string | null {
   const forwardedHost = trustProxy ? c.req.header('x-forwarded-host') : null;
   const hostHeader = forwardedHost?.split(',')[0]?.trim() || c.req.header('host');
   if (!hostHeader) return null;
-  const host = hostHeader.split(':')[0]?.toLowerCase() || null;
-  if (!host) return null;
-  return host.replace(/^\[(.*)\]$/, '$1');
+  const normalized = hostHeader.toLowerCase();
+  if (!normalized) return null;
+
+  if (normalized.startsWith('[')) {
+    const endIndex = normalized.indexOf(']');
+    if (endIndex === -1) return null;
+    return normalized.slice(1, endIndex);
+  }
+
+  return normalized.split(':')[0] || null;
 }
 
 function resolveTenantSlug(host: string): string | null {

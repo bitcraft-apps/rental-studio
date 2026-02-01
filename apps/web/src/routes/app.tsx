@@ -69,6 +69,8 @@ appRouter.get('/renters', (c) => {
   );
 });
 
+appRouter.get('/tenants', (c) => c.redirect('/app/renters', 301));
+
 appRouter.get('/payments', (c) => {
   return c.render(
     <>
