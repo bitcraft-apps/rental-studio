@@ -63,6 +63,7 @@ app.get('/health', (c) => {
 
 // Routes
 app.route('/', index);
+// Auth routes are global (not tenant-scoped) until we need tenant-specific auth flows.
 app.route('/auth', auth);
 app.route('/app', appRouter);
 app.route('/api', api);

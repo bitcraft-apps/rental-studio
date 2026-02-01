@@ -19,10 +19,25 @@ function isValidTenantSlug(slug: string): boolean {
   return TENANT_SLUG_PATTERN.test(slug);
 }
 
+function isLocalHost(host: string): boolean {
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
+function getForwardedHost(forwardedHeader: string | null): string | null {
+  if (!forwardedHeader) return null;
+  const firstEntry = forwardedHeader.split(',')[0]?.trim();
+  if (!firstEntry) return null;
+  const match = firstEntry.match(/host=([^;]+)/i);
+  if (!match) return null;
+  return match[1]?.replace(/^"|"$/g, '') ?? null;
+}
+
 function getRequestHost(c: Context): string | null {
   // Only enable TRUST_PROXY when a trusted proxy strips incoming forwarded headers.
   const trustProxy = process.env.TRUST_PROXY === 'true';
-  const forwardedHost = trustProxy ? c.req.header('x-forwarded-host') : null;
+  const forwardedHost = trustProxy
+    ? (c.req.header('x-forwarded-host') ?? getForwardedHost(c.req.header('forwarded')))
+    : null;
   if (trustProxy && !forwardedHost) return null;
   const hostHeader = forwardedHost?.split(',')[0]?.trim() || c.req.header('host');
   if (!hostHeader) return null;
@@ -46,7 +61,7 @@ function resolveTenantSlug(host: string): string | null {
     return slug || null;
   }
 
-  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return null;
+  if (isLocalHost(host)) return null;
 
   if (host.endsWith('.localhost')) {
     const slug = host.slice(0, -'.localhost'.length);
@@ -87,20 +102,18 @@ export function requireTenant(c: Context): TenantContext {
 export const withTenant = async (c: Context, next: Next) => {
   const host = getRequestHost(c);
   if (!host) {
-    logTenantIssue(c, 'missing_host');
+    logTenantIssue(
+      c,
+      process.env.TRUST_PROXY === 'true' ? 'missing_forwarded_host' : 'missing_host',
+    );
     throw new HTTPException(404, { message: 'Not Found' });
   }
 
-  let slug: string | null;
-  try {
-    slug = resolveTenantSlug(host);
-  } catch (error) {
-    if (error instanceof HTTPException) {
-      logTenantIssue(c, 'base_domain_missing', host);
-      throw error;
-    }
-    throw error;
+  if (!baseDomain && !isLocalHost(host) && !host.endsWith('.localhost')) {
+    logTenantIssue(c, 'base_domain_unset', host);
   }
+
+  const slug = resolveTenantSlug(host);
   if (!slug) {
     logTenantIssue(c, 'missing_subdomain', host);
     throw new HTTPException(404, { message: 'Not Found' });
