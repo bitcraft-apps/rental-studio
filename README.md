@@ -8,7 +8,7 @@ Property management and renovation planning platform for landlords.
 
 ## Documentation
 
-- [Agents Guide](docs/agents.md)
+- [Agents Guide](docs/AGENTS.md)
 
 ## Features (Planned)
 
