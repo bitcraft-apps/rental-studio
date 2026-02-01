@@ -2,34 +2,39 @@ import { Hono } from 'hono';
 import { Card } from '../components';
 import { requireAuth } from '../middleware/auth';
 import { appRenderer } from '../middleware/renderer';
+import { requireTenant, withTenant } from '../middleware/tenant';
 
 const appRouter = new Hono();
 
 /**
  * Middleware order:
  * 1. CSRF protection (applied at app level in index.ts, runs first)
- * 2. Authentication check (redirects to login if not authenticated)
- * 3. Renderer (wraps response in AppLayout)
+ * 2. Tenant resolution (404s when subdomain is missing/invalid)
+ * 3. Authentication check (redirects to login if not authenticated)
+ * 4. Renderer (wraps response in AppLayout)
  *
  * Note: CSRF runs before auth, so unauthenticated POST requests to /app/*
  * will receive a 403 CSRF error instead of a redirect to login. This is
  * intentional - it prevents CSRF probing attacks against protected routes.
  */
+appRouter.use(withTenant);
 appRouter.use(requireAuth);
 appRouter.use(appRenderer);
 
 appRouter.get('/', (c) => {
+  const tenant = requireTenant(c);
   return c.render(
     <>
       <h1>Dashboard</h1>
+      <p class="text-muted">Workspace: {tenant.slug}</p>
       <div class="app-grid">
         <Card header={<strong>Properties</strong>}>
           <p>Manage your rental properties</p>
           <a href="/app/properties">View Properties →</a>
         </Card>
-        <Card header={<strong>Tenants</strong>}>
-          <p>Manage your tenants</p>
-          <a href="/app/tenants">View Tenants →</a>
+        <Card header={<strong>Renters</strong>}>
+          <p>Manage your renters</p>
+          <a href="/app/renters">View Renters →</a>
         </Card>
         <Card header={<strong>Payments</strong>}>
           <p>Track rent payments</p>
@@ -53,16 +58,18 @@ appRouter.get('/properties', (c) => {
   );
 });
 
-appRouter.get('/tenants', (c) => {
+appRouter.get('/renters', (c) => {
   return c.render(
     <>
-      <h1>Tenants</h1>
-      <p>Tenant management coming soon.</p>
+      <h1>Renters</h1>
+      <p>Renter management coming soon.</p>
       <a href="/app">← Back to Dashboard</a>
     </>,
-    { title: 'Tenants' },
+    { title: 'Renters' },
   );
 });
+
+appRouter.get('/tenants', (c) => c.redirect('/app/renters', 301));
 
 appRouter.get('/payments', (c) => {
   return c.render(

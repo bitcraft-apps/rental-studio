@@ -11,6 +11,7 @@
  * request time. The default PORT=3000 is used for test CSRF validation.
  */
 process.env.BYPASS_AUTH = 'true';
+process.env.TENANT_BASE_DOMAIN = 'localhost';
 
 import { describe, expect, it } from 'bun:test';
 import { APP_NAME } from '@rental-studio/core';
@@ -128,7 +129,9 @@ describe('Web App', () => {
 
   describe('App routes (/app/*)', () => {
     it('GET /app should return dashboard', async () => {
-      const res = await app.request('/app');
+      const res = await app.request('/app', {
+        headers: { Host: 'demo.localhost' },
+      });
 
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('Dashboard');
@@ -140,7 +143,9 @@ describe('Web App', () => {
       process.env.BYPASS_AUTH = 'false';
 
       try {
-        const res = await app.request('/app');
+        const res = await app.request('/app', {
+          headers: { Host: 'demo.localhost' },
+        });
 
         expect(res.status).toBe(302);
         expect(res.headers.get('Location')).toBe('/auth/login');
@@ -153,11 +158,21 @@ describe('Web App', () => {
 
   describe('API routes (/api/*)', () => {
     it('GET /api/version should return version info', async () => {
-      const res = await app.request('/api/version');
+      const res = await app.request('/api/version', {
+        headers: { Host: 'demo.localhost' },
+      });
       const body = (await res.json()) as VersionResponse;
 
       expect(res.status).toBe(200);
       expect(body.version).toBeDefined();
+    });
+
+    it('GET /api/version should return 404 without tenant subdomain', async () => {
+      const res = await app.request('/api/version', {
+        headers: { Host: 'localhost' },
+      });
+
+      expect(res.status).toBe(404);
     });
   });
 
@@ -176,7 +191,7 @@ describe('Web App', () => {
 
     it('should return 404 JSON for unknown API routes', async () => {
       const res = await app.request('/api/unknown', {
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'application/json', Host: 'demo.localhost' },
       });
       const body = (await res.json()) as ErrorResponse;
 
