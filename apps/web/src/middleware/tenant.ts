@@ -1,6 +1,13 @@
 import type { Context, Next } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const baseDomain = process.env.TENANT_BASE_DOMAIN?.toLowerCase();
+
+if (isProduction && !baseDomain) {
+  throw new Error('TENANT_BASE_DOMAIN must be configured in production');
+}
+
 export type TenantContext = {
   slug: string;
   host: string;
@@ -16,6 +23,7 @@ function getRequestHost(c: Context): string | null {
   // Only enable TRUST_PROXY when a trusted proxy strips incoming forwarded headers.
   const trustProxy = process.env.TRUST_PROXY === 'true';
   const forwardedHost = trustProxy ? c.req.header('x-forwarded-host') : null;
+  if (trustProxy && !forwardedHost) return null;
   const hostHeader = forwardedHost?.split(',')[0]?.trim() || c.req.header('host');
   if (!hostHeader) return null;
   const normalized = hostHeader.toLowerCase();
@@ -31,11 +39,6 @@ function getRequestHost(c: Context): string | null {
 }
 
 function resolveTenantSlug(host: string): string | null {
-  const baseDomain = process.env.TENANT_BASE_DOMAIN?.toLowerCase();
-  if (!baseDomain && process.env.NODE_ENV === 'production') {
-    throw new HTTPException(500, { message: 'Tenant base domain not configured' });
-  }
-
   if (baseDomain) {
     if (host === baseDomain) return null;
     if (!host.endsWith(`.${baseDomain}`)) return null;
@@ -54,11 +57,12 @@ function resolveTenantSlug(host: string): string | null {
 }
 
 function logTenantIssue(c: Context, reason: string, host?: string, slug?: string): void {
+  const requestId = c.get('requestId') ?? 'unknown';
   console.info(
     JSON.stringify({
       level: 'info',
       event: 'tenant_resolution_failed',
-      requestId: c.get('requestId'),
+      requestId,
       method: c.req.method,
       path: c.req.path,
       reason,
